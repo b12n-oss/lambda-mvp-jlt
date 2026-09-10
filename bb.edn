@@ -13,4 +13,12 @@
                   (println "  bb teardown  delete the function + role")
                   (println "  bb clean     remove build artifacts")
                   (println "")
-                  (println "No task hardcodes an AWS profile, account, or region -- see README.md"))}}}
+                  (println "No task hardcodes an AWS profile, account, or region -- see README.md"))}
+
+  probe {:doc "offline e2e: mock Runtime API on :9001 + the demo handler"
+         :task (let [srv (p/process ["python3" "tools/mock_runtime_api.py"]
+                                    {:inherit true})]
+                 (Thread/sleep 500)
+                 (p/shell {:extra-env {"AWS_LAMBDA_RUNTIME_API" "127.0.0.1:9001"}}
+                          "joltc run -m net.b12n.lambda-mvp.main")
+                 (System/exit (:exit (deref srv))))}}}
