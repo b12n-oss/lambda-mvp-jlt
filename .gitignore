@@ -1,0 +1,10 @@
+dist/
+bootstrap
+bootstrap.build/
+*.zip
+.DS_Store
+.jolt/
+.cpcache/
+.remember/
+CLAUDE.md
+AGENTS.md

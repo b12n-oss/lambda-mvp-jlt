@@ -1,0 +1,16 @@
+{:tasks
+ {:requires ([babashka.process :as p])
+
+  info {:doc "task cheat-sheet"
+        :task (do (println "lambda-mvp-jlt -- a shareable AWS Lambda custom runtime in jolt")
+                  (println "")
+                  (println "  bb probe     offline e2e: mock Runtime API + jolt loop (no AWS, no Docker)")
+                  (println "  bb build     AL2023 Docker build -> dist/bootstrap + dist/lambda.zip")
+                  (println "  bb deploy    idempotent: create/update the IAM role + Lambda function")
+                  (println "  bb invoke    single ad-hoc invoke, prints response + REPORT line")
+                  (println "  bb bench     cold/warm boot-time comparison across memory tiers")
+                  (println "  bb test      run script/bench.clj's unit tests")
+                  (println "  bb teardown  delete the function + role")
+                  (println "  bb clean     remove build artifacts")
+                  (println "")
+                  (println "No task hardcodes an AWS profile, account, or region -- see README.md"))}}}

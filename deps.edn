@@ -1,0 +1,9 @@
+{:paths ["src"]
+
+ ;; http-client: the Runtime API loop's transport (plain HTTP -> libc
+ ;; sockets; OpenSSL only for https). Public + pure Clojure-over-FFI, no
+ ;; local checkout needed -- :git/sha resolved by `joltc build` itself
+ ;; over HTTPS.
+ :deps {jolt-lang/http-client
+        {:git/url "https://github.com/jolt-lang/http-client"
+         :git/sha "35677c6eadefe93633da6ad8d9d7ca3c0f31b506"}}}
