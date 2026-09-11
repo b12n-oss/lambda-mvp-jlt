@@ -1,10 +1,10 @@
 ;; Configuration for the documentation site, read by the docs-engine
 ;; (https://github.com/b12n-oss/docs-engine).
 ;;
-;; Build it locally with `bb site:build`/`bb site:serve`. CI builds it on
-;; every pull request from .github/workflows/site.yml, and will publish
-;; from main once both the PUBLISH_SITE repository variable is set to
-;; "true" and GitHub Pages is enabled, neither of which is done yet.
+;; Build it locally with `jolt site:build`/`jolt site:serve`. CI builds it
+;; on every push and pull request from .github/workflows/site.yml, and
+;; publishes from main: the PUBLISH_SITE repository variable is "true"
+;; and GitHub Pages is enabled.
 {;; :base-path is what makes this a project site rather than an org one.
  ;; The site is served at https://b12n-oss.github.io/lambda-mvp-jlt/, so
  ;; every URL the engine emits needs that prefix. Leave it out and the
@@ -14,4 +14,4 @@
  :base-path   "/lambda-mvp-jlt"
 
  :title       "lambda-mvp-jlt"
- :description "A shareable AWS Lambda custom runtime in Jolt, with a bb bench tool for reproducing a cold-vs-warm boot-time comparison against your own AWS account."}
+ :description "A shareable AWS Lambda custom runtime in Jolt, with a jolt bench tool for reproducing a cold-vs-warm boot-time comparison against your own AWS account."}

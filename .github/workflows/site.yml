@@ -8,17 +8,17 @@ name: Site
 # The engine is pinned to a tag rather than tracking its main branch, so a
 # change over there cannot break these docs without someone choosing it.
 #
-# TRIGGER IS DISPATCH-ONLY while this repo is private, since a private repo
-# pays for every run. Restore `push: {branches: [main]}` and `pull_request:`
-# once this repo goes public (see b12n-skills:prepare-for-open-source's
-# go-public-reference.md).
+# This repo is public: builds run on every push to main and every pull
+# request, plus on-demand via workflow_dispatch.
 #
-# PUBLISHING IS OFF. The deploy job is gated on the PUBLISH_SITE repository
-# variable, which does not exist yet, and GitHub Pages is not enabled on this
-# repo. Both must change for anything to be served. To turn it on, enable
-# Pages and set PUBLISH_SITE to "true".
+# The deploy job is gated on the PUBLISH_SITE repository variable (set to
+# "true") and GitHub Pages being enabled on this repo. Both are true as of
+# 2026-09-11.
 
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
