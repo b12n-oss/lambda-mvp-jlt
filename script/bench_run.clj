@@ -13,7 +13,7 @@
 
 (def memory-tiers
   (mapv #(Integer/parseInt (str/trim %))
-        (str/split (or (System/getenv "BENCH_MEMORY_TIERS") "256,512,1024,2048") #",")))
+        (str/split (or (System/getenv "BENCH_MEMORY_TIERS") "2048,3072,4096") #",")))
 
 (def warm-samples
   (Integer/parseInt (or (System/getenv "BENCH_WARM_SAMPLES") "5")))
