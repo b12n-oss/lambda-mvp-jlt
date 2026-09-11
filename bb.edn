@@ -5,13 +5,13 @@
   :init
   (do
     ;; --- documentation site -------------------------------------------------
-    ;; The generator lives in b12n-oss/docs-engine, not here. The site is
+    ;; The generator lives in jlt-commons/docs-engine, not here. The site is
     ;; built in CI (.github/workflows/site.yml, which pins an engine tag), so
     ;; these tasks exist only for local preview and are the one place that
     ;; needs a checkout of the engine on disk.
     (def repo-root (str (fs/parent (fs/absolutize "bb.edn"))))
 
-    (def docs-engine-repo "https://github.com/b12n-oss/docs-engine")
+    (def docs-engine-repo "https://github.com/jlt-commons/docs-engine")
 
     (defn docs-engine-dir
       "Where the engine is checked out: $DOCS_ENGINE, else a sibling
@@ -20,7 +20,7 @@
       (let [home (System/getProperty "user.home")]
         (->> [(System/getenv "DOCS_ENGINE")
               "../docs-engine"
-              (str home "/dev/b12n-oss/docs-engine")]
+              (str home "/dev/jlt-commons/docs-engine")]
              (remove nil?)
              (filter (fn [d] (fs/exists? (fs/file d "bb.edn"))))
              first)))
@@ -34,7 +34,7 @@
           (when-not (zero? (:exit res)) (System/exit (:exit res))))
         (do
           (println "The docs engine is not checked out anywhere I looked:")
-          (println "  $DOCS_ENGINE, ../docs-engine, ~/dev/b12n-oss/docs-engine")
+          (println "  $DOCS_ENGINE, ../docs-engine, ~/dev/jlt-commons/docs-engine")
           (println)
           (println "  git clone" docs-engine-repo "../docs-engine")
           (println)
