@@ -1,17 +1,63 @@
 {:tasks
- {:requires ([babashka.process :as p])
+ {:requires ([babashka.fs :as fs]
+             [babashka.process :as p])
+
+  :init
+  (do
+    ;; --- documentation site -------------------------------------------------
+    ;; The generator lives in b12n-oss/docs-engine, not here. The site is
+    ;; built in CI (.github/workflows/site.yml, which pins an engine tag), so
+    ;; these tasks exist only for local preview and are the one place that
+    ;; needs a checkout of the engine on disk.
+    (def repo-root (str (fs/parent (fs/absolutize "bb.edn"))))
+
+    (def docs-engine-repo "https://github.com/b12n-oss/docs-engine")
+
+    (defn docs-engine-dir
+      "Where the engine is checked out: $DOCS_ENGINE, else a sibling
+       directory, else the usual spot. nil when none of them exist."
+      []
+      (let [home (System/getProperty "user.home")]
+        (->> [(System/getenv "DOCS_ENGINE")
+              "../docs-engine"
+              (str home "/dev/b12n-oss/docs-engine")]
+             (remove nil?)
+             (filter (fn [d] (fs/exists? (fs/file d "bb.edn"))))
+             first)))
+
+    (defn site-task
+      "Runs one of the engine's tasks against this project."
+      [task & args]
+      (if-let [engine (docs-engine-dir)]
+        (let [argv (into ["bb" task repo-root] (remove nil? args))
+              res  (apply p/shell {:dir (str engine) :continue true} argv)]
+          (when-not (zero? (:exit res)) (System/exit (:exit res))))
+        (do
+          (println "The docs engine is not checked out anywhere I looked:")
+          (println "  $DOCS_ENGINE, ../docs-engine, ~/dev/b12n-oss/docs-engine")
+          (println)
+          (println "  git clone" docs-engine-repo "../docs-engine")
+          (println)
+          (println "CI does not need this. It checks the engine out itself.")
+          (System/exit 1)))))
 
   info {:doc "task cheat-sheet"
         :task (do (println "lambda-mvp-jlt -- a shareable AWS Lambda custom runtime in jolt")
                   (println "")
-                  (println "  bb probe     offline e2e: mock Runtime API + jolt loop (no AWS, no Docker)")
-                  (println "  bb image     AL2023 Docker build -> dist/bootstrap + dist/lambda.zip")
-                  (println "  bb deploy    idempotent: create/update the IAM role + Lambda function")
-                  (println "  bb invoke    single ad-hoc invoke, prints response + REPORT line")
-                  (println "  bb bench     cold/warm boot-time comparison across memory tiers")
-                  (println "  bb test      run script/bench.clj's unit tests")
-                  (println "  bb teardown  delete the function + role")
-                  (println "  bb clean     remove build artifacts")
+                  (println "  jolt probe       offline e2e: mock Runtime API + jolt loop (no AWS, no Docker)")
+                  (println "  jolt image       AL2023 Docker build -> dist/bootstrap + dist/lambda.zip")
+                  (println "  jolt deploy      idempotent: create/update the IAM role + Lambda function")
+                  (println "  jolt invoke      single ad-hoc invoke, prints response + REPORT line")
+                  (println "  jolt bench       cold/warm boot-time comparison across memory tiers")
+                  (println "  jolt test        run script/bench.clj's unit tests")
+                  (println "  jolt teardown    delete the function + role")
+                  (println "  jolt clean       remove build artifacts")
+                  (println "  jolt site:build  build the docs site into _site/ (needs a docs-engine checkout)")
+                  (println "  jolt site:serve  build the docs site and serve it locally")
+                  (println "  jolt site:clean  delete the _site/ build output")
+                  (println "")
+                  (println "(babashka is still required -- several tasks shell out to a real `bb`")
+                  (println " binary internally. `bb <task>` also works if you'd rather type that.)")
                   (println "")
                   (println "No task hardcodes an AWS profile, account, or region -- see README.md"))}
 
@@ -58,4 +104,13 @@
          :task (p/shell "bb" "script/bench_run.clj")}
 
   test {:doc "run script/bench.clj's unit tests"
-        :task (p/shell "bb" "test/bench_test.clj")}}}
+        :task (p/shell "bb" "test/bench_test.clj")}
+
+  site:build {:doc "build the docs site into _site/ (needs a docs-engine checkout)"
+              :task (site-task "build")}
+
+  site:serve {:doc "build the docs site and serve it locally (bb site:serve [port], default 3000)"
+              :task (site-task "serve" (first *command-line-args*))}
+
+  site:clean {:doc "delete the _site/ build output"
+              :task (site-task "clean")}}}

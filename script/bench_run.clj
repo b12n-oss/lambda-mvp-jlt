@@ -1,5 +1,5 @@
 (ns script.bench-run
-  "Orchestrates `bb bench`: for each memory tier, force a fresh execution
+  "Orchestrates `jolt bench`: for each memory tier, force a fresh execution
   environment (any config update does this), measure one cold sample, then
   BENCH_WARM_SAMPLES back-to-back warm samples, and print a comparison
   table. See docs/guide/cold-warm-boot.md.")
@@ -78,7 +78,7 @@
     (let [warm (mapv (fn [_] (invoke-sample!)) (range warm-samples))]
       (when (some nil? warm)
         (die! "a warm sample for" tier "MB produced no parseable REPORT line"
-              "(likely a transient invoke or log-delivery issue) -- rerun bb bench"))
+              "(likely a transient invoke or log-delivery issue) -- rerun jolt bench"))
       (when (some :init-duration-ms warm)
         (println "lambda-mvp-jlt: WARNING -- a 'warm' sample for" tier
                  "MB unexpectedly showed Init Duration; the execution"

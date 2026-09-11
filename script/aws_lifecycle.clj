@@ -2,9 +2,11 @@
   "Generic (no hardcoded profile/account/region) create-or-update / invoke /
   teardown for the lambda-mvp-jlt demo function, driven entirely by
   whatever the caller's aws CLI already has configured (AWS_PROFILE/
-  AWS_REGION env vars, or `aws configure`). Invoked via `bb deploy`/
-  `bb invoke`/`bb teardown`, or directly:
-  `bb script/aws_lifecycle.clj deploy|invoke|teardown`."
+  AWS_REGION env vars, or `aws configure`). Invoked via `jolt deploy`/
+  `jolt invoke`/`jolt teardown`, or directly:
+  `bb script/aws_lifecycle.clj deploy|invoke|teardown` (jolt itself can't
+  run this file directly, only babashka: it needs cheshire.core, which
+  jolt doesn't bundle)."
   (:require [babashka.process :as p]
             [cheshire.core :as json]
             [clojure.string :as str]))
@@ -75,7 +77,7 @@
 
 (defn- ensure-function! []
   (when-not (.exists (java.io.File. zip-path))
-    (die! zip-path "not found -- run `bb image` first."))
+    (die! zip-path "not found -- run `jolt image` first."))
   (if (function-exists?)
     (do
       (println "lambda-mvp-jlt: updating function code for" function-name)

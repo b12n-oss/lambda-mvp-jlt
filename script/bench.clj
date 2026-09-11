@@ -1,5 +1,5 @@
 (ns script.bench
-  "Pure parsing/formatting helpers for the bb bench task. No AWS I/O here --
+  "Pure parsing/formatting helpers for the jolt bench task. No AWS I/O here --
   see script/bench_run.clj for the orchestration that calls these."
   (:require [clojure.string :as str]))
 

@@ -6,6 +6,5 @@ bootstrap.build/
 .jolt/
 .cpcache/
 .remember/
-CLAUDE.md
-AGENTS.md
 .mock-runtime-api-port
+_site/
