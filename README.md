@@ -63,6 +63,7 @@ See `docs/guide/runtime-api-loop.md` for the loop's design notes and
 
 ```sh
 bb probe        # offline e2e: mock Runtime API + demo handler (no AWS, no Docker)
+bb test         # run script/bench.clj's unit tests (no AWS, no Docker)
 bb build        # AL2023 Docker build -> dist/bootstrap + dist/lambda.zip (arm64)
 bb deploy       # idempotent: create/update the IAM role + Lambda function
 bb invoke       # single ad-hoc invoke, prints the response body + REPORT line

@@ -8,7 +8,9 @@
   (try
     (runtime/run handler/handle)
     (catch Exception e
+      ;; Print first: if post-init-error itself throws (e.g. a malformed
+      ;; AWS_LAMBDA_RUNTIME_API), the diagnostic must not be lost with it.
+      (println "runtime: fatal:" (ex-message e))
       ;; Startup/loop-level failure: tell Lambda, then let the process die so
       ;; the sandbox recycles.
-      (runtime/post-init-error (or (ex-message e) "init failed") "InitError")
-      (println "runtime: fatal:" (ex-message e)))))
+      (runtime/post-init-error (or (ex-message e) "init failed") "InitError"))))

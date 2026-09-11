@@ -32,13 +32,13 @@
                                 "joltc run -m net.b12n.lambda-mvp.main")
                        (System/exit (:exit (deref srv)))))))}
 
-  build {:doc "build bootstrap + lambda.zip in an amazonlinux:2023 container"
-         :task (let [jolt-version (or (System/getenv "JOLT_VERSION") "0.8.6")
-                     chez-version (or (System/getenv "CHEZ_VERSION") "10.4.1")
+  build {:doc "build bootstrap + lambda.zip in an amazonlinux:2023 container (linux/arm64)"
+         :task (let [jolt-version (System/getenv "JOLT_VERSION")
+                     chez-version (System/getenv "CHEZ_VERSION")
                      base (System/getenv "BASE_IMAGE")]
-                 (p/shell (str "docker build --target export --output dist "
-                               "--build-arg JOLT_VERSION=" jolt-version " "
-                               "--build-arg CHEZ_VERSION=" chez-version " "
+                 (p/shell (str "docker build --target export --output dist --platform linux/arm64 "
+                               (if jolt-version (str "--build-arg JOLT_VERSION=" jolt-version " ") "")
+                               (if chez-version (str "--build-arg CHEZ_VERSION=" chez-version " ") "")
                                (if base (str "--build-arg BASE_IMAGE=" base " ") "")
                                ".")))}
 

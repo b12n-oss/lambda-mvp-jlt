@@ -53,6 +53,15 @@ bb bench
 bb teardown   # when you're done -- nothing should keep running in your account
 ```
 
+Two things worth knowing before you run it: `bb bench` leaves the function
+configured at its last tier's memory size (3008 MB by default) — a later
+`bb deploy` resets it back to 2048 MB, but if you only ever run `bb bench`
+you're left on the higher-cost tier. And `bb deploy`/`bb bench`/`bb teardown`
+all act on whatever function/role name is configured
+(`LAMBDA_MVP_FUNCTION_NAME`, default `lambda-mvp-jlt`) — don't point it at
+an existing unrelated resource, since `bb deploy` will overwrite its code
+and `bb teardown` will delete it.
+
 If a "cold" sample shows no Init Duration, `bb bench` prints a warning
 rather than silently reporting incomplete data — that would mean the
 execution environment wasn't actually fresh, worth investigating rather than
@@ -63,7 +72,10 @@ trusting the number.
 Measured in the private project this repo was extracted from (`us-east-1`,
 `provided.al2023`, arm64, 2026-07-18 — **illustrative, not a live
 guarantee**; your numbers will differ by account, region, and the hardware
-allocation AWS happens to give you):
+allocation AWS happens to give you). They were measured against that project's
+then-current jolt v0.7.14 pin, before the v0.8.5 heap ceiling existed — so the
+256 and 512 MB tiers shown below are not reproducible against this repo's own
+jolt v0.8.6 default, for the reason the heap-ceiling note above describes:
 
 | Metric | 256 MB | 512 MB |
 |---|---|---|

@@ -52,7 +52,9 @@ Design notes:
 
 ## Testing without AWS: the mock Runtime API
 
-`tools/mock_runtime_api.py` binds `127.0.0.1:9001` and mimics the contract:
+`tools/mock_runtime_api.py` binds an OS-assigned ephemeral port (published to
+`.mock-runtime-api-port`, which `bb.edn`'s `probe` task reads back) and mimics
+the contract:
 canned events on `/invocation/next` with the real header set, captured POSTs,
 then **410 Gone** so the loop exits — and asserts one well-formed response per
 event (exit 0/1). `bb probe` wires it to the real loop under `joltc run`:

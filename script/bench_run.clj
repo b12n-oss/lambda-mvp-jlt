@@ -7,6 +7,7 @@
 (load-file "script/bench.clj")
 
 (require '[babashka.process :as p]
+         '[cheshire.core :as json]
          '[clojure.string :as str])
 
 (def function-name (or (System/getenv "LAMBDA_MVP_FUNCTION_NAME") "lambda-mvp-jlt"))
@@ -26,6 +27,16 @@
   (binding [*out* *err*] (apply println "lambda-mvp-jlt:" msg))
   (System/exit 1))
 
+(defn- require-aws-identity!
+  "Fail fast with a clear message if the aws CLI has no usable
+  credentials/region, rather than letting a later call fail obscurely."
+  []
+  (let [{:keys [exit err]} (sh "aws" "sts" "get-caller-identity" "--output" "json")]
+    (when-not (zero? exit)
+      (die! "aws CLI has no usable credentials/region."
+            "Set AWS_PROFILE/AWS_REGION or run `aws configure`, then retry.\n"
+            (str/trim (or err ""))))))
+
 (defn- set-memory! [tier]
   (let [{:keys [exit err]} (sh "aws" "lambda" "update-function-configuration"
                                "--function-name" function-name
@@ -43,13 +54,16 @@
             "--payload" "{}"
             "--cli-binary-format" "raw-in-base64-out"
             "--log-type" "Tail"
-            "--query" "LogResult"
-            "--output" "text"
+            "--output" "json"
             out-file)]
     (when-not (zero? exit) (die! "invoke failed:" err))
-    (let [log-text (String. (.decode (java.util.Base64/getDecoder) (str/trim out)))]
+    (let [response (json/parse-string out true)
+          body (slurp out-file)]
       (.delete (java.io.File. out-file))
-      (script.bench/parse-report-line log-text))))
+      (when (:FunctionError response)
+        (die! "function invocation failed (FunctionError:" (:FunctionError response) "):" body))
+      (script.bench/parse-report-line
+       (String. (.decode (java.util.Base64/getDecoder) (:LogResult response)))))))
 
 (defn- bench-tier [tier]
   (println "lambda-mvp-jlt: benchmarking" tier "MB...")
@@ -65,6 +79,11 @@
       (when (some nil? warm)
         (die! "a warm sample for" tier "MB produced no parseable REPORT line"
               "(likely a transient invoke or log-delivery issue) -- rerun bb bench"))
+      (when (some :init-duration-ms warm)
+        (println "lambda-mvp-jlt: WARNING -- a 'warm' sample for" tier
+                 "MB unexpectedly showed Init Duration; the execution"
+                 "environment may have been recycled mid-run (see"
+                 "docs/guide/cold-warm-boot.md)"))
       (let [durations (sort (mapv :duration-ms warm))]
         {:tier tier
          :cold-init-ms (:init-duration-ms cold)
@@ -75,6 +94,7 @@
          :max-memory-used-mb (:max-memory-used-mb cold)}))))
 
 (defn run-bench! []
+  (require-aws-identity!)
   (let [results (mapv bench-tier memory-tiers)]
     (println)
     (println (script.bench/format-table results))))
