@@ -103,8 +103,8 @@ worth reproducing against *this* repo's much smaller, dependency-free
 binary rather than taking the number on faith:
 
 ```sh
-JOLT_VERSION=0.7.14 bb build && bb deploy && bb bench   # note the table
-JOLT_VERSION=0.8.6  bb build && bb deploy && bb bench   # compare
+JOLT_VERSION=0.7.14 bb image && bb deploy && bb bench   # note the table
+JOLT_VERSION=0.8.6  bb image && bb deploy && bb bench   # compare
 bb teardown
 ```
 

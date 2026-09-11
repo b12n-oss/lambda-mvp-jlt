@@ -64,7 +64,7 @@ See `docs/guide/runtime-api-loop.md` for the loop's design notes and
 ```sh
 bb probe        # offline e2e: mock Runtime API + demo handler (no AWS, no Docker)
 bb test         # run script/bench.clj's unit tests (no AWS, no Docker)
-bb build        # AL2023 Docker build -> dist/bootstrap + dist/lambda.zip (arm64)
+bb image        # AL2023 Docker build -> dist/bootstrap + dist/lambda.zip (arm64)
 bb deploy       # idempotent: create/update the IAM role + Lambda function
 bb invoke       # single ad-hoc invoke, prints the response body + REPORT line
 bb bench        # cold/warm boot-time comparison across memory tiers
@@ -96,7 +96,7 @@ brew install crane
 crane pull --platform linux/arm64 public.ecr.aws/amazonlinux/amazonlinux:2023 /tmp/al2023.tar
 docker load -i /tmp/al2023.tar
 docker tag public.ecr.aws/amazonlinux/amazonlinux:2023 my-local/amazonlinux:2023
-BASE_IMAGE=my-local/amazonlinux:2023 bb build
+BASE_IMAGE=my-local/amazonlinux:2023 bb image
 ```
 
 ### Upgrading local `joltc`/`jolt` fails with a 403 on the release tarball

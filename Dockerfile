@@ -16,8 +16,8 @@ FROM ${BASE_IMAGE} AS build
 
 # Overridable so a collaborator can reproduce a jolt-version cold/warm
 # boot-time comparison -- see docs/guide/cold-warm-boot.md:
-#   JOLT_VERSION=0.7.14 bb build && bb deploy && bb bench
-#   JOLT_VERSION=0.8.6  bb build && bb deploy && bb bench
+#   JOLT_VERSION=0.7.14 bb image && bb deploy && bb bench
+#   JOLT_VERSION=0.8.6  bb image && bb deploy && bb bench
 ARG JOLT_VERSION=0.8.6
 ARG CHEZ_VERSION=10.4.1
 
@@ -38,7 +38,7 @@ RUN git clone --depth 1 --branch v${CHEZ_VERSION} https://github.com/cisco/ChezS
 ENV PATH=/opt/chez/bin:$PATH
 
 # Jolt from source (bootstrap seed is checked in -- no build step, clone and
-# run). PINNED to a tag, not a floating clone of main, so `bb build` is
+# run). PINNED to a tag, not a floating clone of main, so `bb image` is
 # reproducible.
 RUN git clone --recurse-submodules --depth 1 --branch v${JOLT_VERSION} https://github.com/jolt-lang/jolt.git /opt/jolt
 ENV PATH=/opt/jolt/bin:$PATH

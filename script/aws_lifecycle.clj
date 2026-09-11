@@ -75,7 +75,7 @@
 
 (defn- ensure-function! []
   (when-not (.exists (java.io.File. zip-path))
-    (die! zip-path "not found -- run `bb build` first."))
+    (die! zip-path "not found -- run `bb image` first."))
   (if (function-exists?)
     (do
       (println "lambda-mvp-jlt: updating function code for" function-name)
