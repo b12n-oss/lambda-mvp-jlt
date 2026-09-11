@@ -67,6 +67,29 @@ rather than silently reporting incomplete data. That would mean the
 execution environment wasn't actually fresh, worth investigating rather than
 trusting the number.
 
+## This repo's own baseline
+
+Measured against this repo's own binary (not the source project's), jolt
+v0.8.7, arm64, `provided.al2023`, 2026-09-12, two regions back to back:
+
+| Metric | us-west-2, 2048 MB | us-west-2, 3008 MB | ap-southeast-2, 2048 MB | ap-southeast-2, 3008 MB |
+|---|---|---|---|---|
+| Cold Init Duration | 325.3 ms | 306.5 ms | 288.3 ms | 401.9 ms |
+| Cold Duration | 2.4 ms | 2.2 ms | 2.1 ms | 3.0 ms |
+| Warm Duration (min/median/max) | 1.8 / 1.9 / 2.0 ms | 2.0 / 2.2 / 2.3 ms | 1.7 / 1.8 / 2.0 ms | 2.1 / 2.2 / 2.6 ms |
+| Max Memory Used | 164 MB | 164 MB | 164 MB | 164 MB |
+
+Same as **illustrative, not a live guarantee**: a single run each, and the
+spread between tiers and regions above (down to ~2 ms warm, Cold Init
+anywhere from ~290 to ~400 ms) is itself the point, not a precise number to
+target. Max Memory Used holding at 164 MB across every tier and region is
+the more reliable observation: notably below the ~250 MB baseline the
+section above describes for jolt v0.8.6 and earlier, consistent with
+v0.8.7's own changelog crediting binary-size and resident-memory cuts
+(a hello-world example there went from 225 MB to 95 MB resident). That's
+plausible as the same effect showing up here, but not confirmed as one:
+it needs an actual v0.8.6-vs-v0.8.7 A/B on this same binary, not run yet.
+
 ## What the source research project found
 
 Measured in the private project this repo was extracted from (`us-east-1`,
@@ -75,7 +98,7 @@ guarantee**; your numbers will differ by account, region, and the hardware
 allocation AWS happens to give you). They were measured against that project's
 then-current jolt v0.7.14 pin, before the v0.8.5 heap ceiling existed, so the
 256 and 512 MB tiers shown below are not reproducible against this repo's own
-jolt v0.8.6 default, for the reason the heap-ceiling note above describes:
+jolt v0.8.7 default, for the reason the heap-ceiling note above describes:
 
 | Metric | 256 MB | 512 MB |
 |---|---|---|
@@ -104,7 +127,7 @@ binary rather than taking the number on faith:
 
 ```sh
 JOLT_VERSION=0.7.14 jolt image && jolt deploy && jolt bench   # note the table
-JOLT_VERSION=0.8.6  jolt image && jolt deploy && jolt bench   # compare
+JOLT_VERSION=0.8.7  jolt image && jolt deploy && jolt bench   # compare
 jolt teardown
 ```
 

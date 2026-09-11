@@ -16,9 +16,9 @@ FROM ${BASE_IMAGE} AS build
 
 # Overridable so a collaborator can reproduce a jolt-version cold/warm
 # boot-time comparison -- see docs/guide/cold-warm-boot.md:
-#   JOLT_VERSION=0.7.14 bb image && bb deploy && bb bench
-#   JOLT_VERSION=0.8.6  bb image && bb deploy && bb bench
-ARG JOLT_VERSION=0.8.6
+#   JOLT_VERSION=0.7.14 jolt image && jolt deploy && jolt bench
+#   JOLT_VERSION=0.8.7  jolt image && jolt deploy && jolt bench
+ARG JOLT_VERSION=0.8.7
 ARG CHEZ_VERSION=10.4.1
 
 RUN dnf install -y gcc gcc-c++ make git zip tar gzip findutils \

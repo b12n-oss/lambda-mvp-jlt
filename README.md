@@ -124,7 +124,7 @@ unset for that one command:
 
 ```sh
 env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
-  bash install --dir /usr/local/bin --version 0.8.6   # run from a jolt checkout
+  bash install --dir /usr/local/bin --version 0.8.7   # run from a jolt checkout
 ```
 
 ## Extension points
