@@ -7,8 +7,8 @@ All notable changes to this project are documented here.
 ### Added
 
 - Initial public release preparation.
-- x86_64 builds: `LAMBDA_ARCH=x86_64 jolt image` (default stays `arm64`); `jolt deploy` reads the architecture from `dist/bootstrap`'s ELF header and passes it on both create and update.
-- `jolt demo`: `image` + `deploy` + `invoke` in one command, with every prerequisite (tools, AWS credentials and region, Docker access, emulation for `LAMBDA_ARCH`) checked before the build starts.
+- x86_64 builds: `LAMBDA_ARCH=x86_64 jolt image` (default stays `arm64`); `jolt deploy` reads the architecture from `dist/bootstrap`'s ELF header and passes it on both create and update. Thanks to [@codegod100](https://github.com/codegod100) for this contribution ([#2](https://github.com/b12n-oss/lambda-mvp-jlt/pull/2)), verified end to end on x86_64 Linux and, separately, against the project's own arm64 default on Apple Silicon.
+- `jolt demo`: `image` + `deploy` + `invoke` in one command, with every prerequisite (tools, AWS credentials and region, Docker access, emulation for `LAMBDA_ARCH`) checked before the build starts. Also from [#2](https://github.com/b12n-oss/lambda-mvp-jlt/pull/2).
 
 ## [0.1.0]
 
