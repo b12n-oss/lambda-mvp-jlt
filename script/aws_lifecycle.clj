@@ -52,14 +52,18 @@
                                    "--role-name" role-name
                                    "--assume-role-policy-document" trust-policy)]
         (when-not (zero? exit) (die! "create-role failed:" err)))
-      (let [{:keys [exit err]} (sh "aws" "iam" "attach-role-policy"
-                                   "--role-name" role-name
-                                   "--policy-arn" policy-arn)]
-        (when-not (zero? exit) (die! "attach-role-policy failed:" err)))
       ;; IAM role propagation is eventually consistent -- a create-function
       ;; immediately after create-role can fail with "role cannot be assumed".
       (println "lambda-mvp-jlt: waiting 10s for IAM role propagation")
-      (Thread/sleep 10000))))
+      (Thread/sleep 10000)))
+  ;; Always (re-)attach the policy, whether the role is new or pre-existing --
+  ;; attach-role-policy is itself idempotent (AWS no-ops on an
+  ;; already-attached policy), so this closes the gap where a prior run
+  ;; created the role but died before attaching the policy.
+  (let [{:keys [exit err]} (sh "aws" "iam" "attach-role-policy"
+                               "--role-name" role-name
+                               "--policy-arn" policy-arn)]
+    (when-not (zero? exit) (die! "attach-role-policy failed:" err))))
 
 (defn- role-arn []
   (-> (sh "aws" "iam" "get-role" "--role-name" role-name
@@ -79,7 +83,8 @@
                                    "--function-name" function-name
                                    "--zip-file" (str "fileb://" zip-path))]
         (when-not (zero? exit) (die! "update-function-code failed:" err)))
-      (sh "aws" "lambda" "wait" "function-updated" "--function-name" function-name)
+      (let [{:keys [exit err]} (sh "aws" "lambda" "wait" "function-updated" "--function-name" function-name)]
+        (when-not (zero? exit) (die! "function did not reach Active state:" err)))
       (let [{:keys [exit err]} (sh "aws" "lambda" "update-function-configuration"
                                    "--function-name" function-name
                                    "--timeout" "15" "--memory-size" "512")]
@@ -95,7 +100,8 @@
                                    "--role" (role-arn)
                                    "--timeout" "15" "--memory-size" "512")]
         (when-not (zero? exit) (die! "create-function failed:" err)))))
-  (sh "aws" "lambda" "wait" "function-updated" "--function-name" function-name))
+  (let [{:keys [exit err]} (sh "aws" "lambda" "wait" "function-updated" "--function-name" function-name)]
+    (when-not (zero? exit) (die! "function did not reach Active state:" err))))
 
 (defn deploy! []
   (require-aws-identity!)
@@ -128,11 +134,14 @@
   (require-aws-identity!)
   (when (function-exists?)
     (println "lambda-mvp-jlt: deleting function" function-name)
-    (sh "aws" "lambda" "delete-function" "--function-name" function-name))
+    (let [{:keys [exit err]} (sh "aws" "lambda" "delete-function" "--function-name" function-name)]
+      (when-not (zero? exit) (die! "delete-function failed:" err))))
   (when (role-exists?)
     (println "lambda-mvp-jlt: detaching + deleting role" role-name)
-    (sh "aws" "iam" "detach-role-policy" "--role-name" role-name "--policy-arn" policy-arn)
-    (sh "aws" "iam" "delete-role" "--role-name" role-name))
+    (let [{:keys [exit err]} (sh "aws" "iam" "detach-role-policy" "--role-name" role-name "--policy-arn" policy-arn)]
+      (when-not (zero? exit) (die! "detach-role-policy failed:" err)))
+    (let [{:keys [exit err]} (sh "aws" "iam" "delete-role" "--role-name" role-name)]
+      (when-not (zero? exit) (die! "delete-role failed:" err))))
   (println "lambda-mvp-jlt: teardown complete"))
 
 (defn -main [& args]
