@@ -61,15 +61,18 @@
       (println "lambda-mvp-jlt: WARNING -- cold sample for" tier
                "MB has no Init Duration; the execution environment may not"
                "have been fresh (see docs/guide/cold-warm-boot.md)"))
-    (let [warm (mapv (fn [_] (invoke-sample!)) (range warm-samples))
-          durations (sort (mapv :duration-ms warm))]
-      {:tier tier
-       :cold-init-ms (:init-duration-ms cold)
-       :cold-duration-ms (:duration-ms cold)
-       :warm-min-ms (first durations)
-       :warm-median-ms (nth durations (quot (count durations) 2))
-       :warm-max-ms (last durations)
-       :max-memory-used-mb (:max-memory-used-mb cold)})))
+    (let [warm (mapv (fn [_] (invoke-sample!)) (range warm-samples))]
+      (when (some nil? warm)
+        (die! "a warm sample for" tier "MB produced no parseable REPORT line"
+              "(likely a transient invoke or log-delivery issue) -- rerun bb bench"))
+      (let [durations (sort (mapv :duration-ms warm))]
+        {:tier tier
+         :cold-init-ms (:init-duration-ms cold)
+         :cold-duration-ms (:duration-ms cold)
+         :warm-min-ms (first durations)
+         :warm-median-ms (nth durations (quot (count durations) 2))
+         :warm-max-ms (last durations)
+         :max-memory-used-mb (:max-memory-used-mb cold)}))))
 
 (defn run-bench! []
   (let [results (mapv bench-tier memory-tiers)]
