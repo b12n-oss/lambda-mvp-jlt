@@ -30,4 +30,17 @@
                      (let [port (.trim (slurp port-file))]
                        (p/shell {:extra-env {"AWS_LAMBDA_RUNTIME_API" (str "127.0.0.1:" port)}}
                                 "joltc run -m net.b12n.lambda-mvp.main")
-                       (System/exit (:exit (deref srv)))))))}}}
+                       (System/exit (:exit (deref srv)))))))}
+
+  build {:doc "build bootstrap + lambda.zip in an amazonlinux:2023 container"
+         :task (let [jolt-version (or (System/getenv "JOLT_VERSION") "0.8.6")
+                     chez-version (or (System/getenv "CHEZ_VERSION") "10.4.1")
+                     base (System/getenv "BASE_IMAGE")]
+                 (p/shell (str "docker build --target export --output dist "
+                               "--build-arg JOLT_VERSION=" jolt-version " "
+                               "--build-arg CHEZ_VERSION=" chez-version " "
+                               (if base (str "--build-arg BASE_IMAGE=" base " ") "")
+                               ".")))}
+
+  clean {:doc "remove build artifacts"
+         :task (p/shell "rm -rf dist bootstrap bootstrap.build")}}}
