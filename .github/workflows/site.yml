@@ -33,10 +33,9 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
-  # v0.3.1 adds a shareable "copy link" anchor to every heading; jumps from
-  # v0.2.1 because b12n-oss/docs-engine (a fork with no commits of its own)
-  # was retired in favor of jlt-commons/docs-engine directly.
-  DOCS_ENGINE_REF: v0.3.1
+  # v0.3.2 fixes `jolt run build`/`clean` (docs-engine#3), which is what
+  # lets this workflow use jolt instead of babashka below.
+  DOCS_ENGINE_REF: v0.3.2
   BASE_PATH: /lambda-mvp-jlt
 
 jobs:
@@ -52,14 +51,12 @@ jobs:
           ref: ${{ env.DOCS_ENGINE_REF }}
           path: .docs-engine
 
-      - name: Install babashka
-        uses: DeLaGuardo/setup-clojure@13.6.1
-        with:
-          bb: latest
+      - name: Install jolt
+        uses: jlt-commons/setup-jolt@v1
 
       - name: Build
         working-directory: .docs-engine
-        run: bb build "$GITHUB_WORKSPACE"
+        run: jolt run build "$GITHUB_WORKSPACE"
 
       # Each check below names a symptom a reader would otherwise have to
       # diagnose from a rendered page.
