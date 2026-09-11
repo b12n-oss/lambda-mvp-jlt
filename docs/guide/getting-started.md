@@ -50,6 +50,14 @@ jolt teardown
 
 `jolt deploy` is idempotent: it creates the IAM role and Lambda function the first time, and updates them on every later call. `jolt invoke` runs a single ad-hoc invocation and prints the response body plus the CloudWatch `REPORT` line, the same line [Cold vs. warm boot](cold-warm-boot.md) explains how to read. `jolt teardown` deletes both the function and the role, so nothing keeps running in your account.
 
+### Or all at once
+
+```sh
+jolt demo
+```
+
+`jolt demo` runs `image`, `deploy` and `invoke` in order. Before any of them it checks that `docker` and `aws` are on PATH, that the AWS CLI has credentials and a region (and prints the account it will deploy to), that your user can reach the Docker daemon, and that Docker can run containers for `LAMBDA_ARCH`. A missing piece stops it with the fix, before the build starts or anything changes in your account. Docker's layer cache makes repeat runs fast, so it's also the edit-and-redeploy loop for `handler.clj`.
+
 ## Measure cold vs. warm boot time
 
 ```sh

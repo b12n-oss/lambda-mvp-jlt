@@ -45,6 +45,7 @@
         :task (do (println "lambda-mvp-jlt -- a shareable AWS Lambda custom runtime in jolt")
                   (println "")
                   (println "  jolt probe       offline e2e: mock Runtime API + jolt loop (no AWS, no Docker)")
+                  (println "  jolt demo        image + deploy + invoke in one go, prerequisites checked first")
                   (println "  jolt image       AL2023 Docker build -> dist/bootstrap + dist/lambda.zip")
                   (println "  jolt deploy      idempotent: create/update the IAM role + Lambda function")
                   (println "  jolt invoke      single ad-hoc invoke, prints response + REPORT line")
@@ -78,15 +79,25 @@
                                 "joltc run -m net.b12n.lambda-mvp.main")
                        (System/exit (:exit (deref srv)))))))}
 
-  image {:doc "build bootstrap + lambda.zip in an amazonlinux:2023 container (linux/arm64)"
+  image {:doc "build bootstrap + lambda.zip in an amazonlinux:2023 container (LAMBDA_ARCH, default arm64)"
          :task (let [jolt-version (System/getenv "JOLT_VERSION")
                      chez-version (System/getenv "CHEZ_VERSION")
-                     base (System/getenv "BASE_IMAGE")]
-                 (p/shell (str "docker build --target export --output dist --platform linux/arm64 "
+                     base (System/getenv "BASE_IMAGE")
+                     ;; Lambda spells it x86_64, Docker amd64 -- accept both.
+                     arch (or (System/getenv "LAMBDA_ARCH") "arm64")
+                     platform (case arch
+                                "arm64" "linux/arm64"
+                                ("x86_64" "amd64") "linux/amd64"
+                                (do (println "image: LAMBDA_ARCH must be arm64 or x86_64, got" arch)
+                                    (System/exit 1)))]
+                 (p/shell (str "docker build --target export --output dist --platform " platform " "
                                (if jolt-version (str "--build-arg JOLT_VERSION=" jolt-version " ") "")
                                (if chez-version (str "--build-arg CHEZ_VERSION=" chez-version " ") "")
                                (if base (str "--build-arg BASE_IMAGE=" base " ") "")
                                ".")))}
+
+  demo {:doc "image + deploy + invoke in one go, checking every prerequisite before starting"
+        :task (p/shell "bb" "script/demo.clj")}
 
   clean {:doc "remove build artifacts"
          :task (p/shell "rm -rf dist bootstrap bootstrap.build")}
