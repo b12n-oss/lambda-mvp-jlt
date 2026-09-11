@@ -74,14 +74,18 @@ See `docs/guide/runtime-api-loop.md` for the loop's design notes and
 ```sh
 jolt probe        # offline e2e: mock Runtime API + demo handler (no AWS, no Docker)
 jolt test         # run script/bench.clj's unit tests (no AWS, no Docker)
-jolt image        # AL2023 Docker build -> dist/bootstrap + dist/lambda.zip (arm64)
+jolt demo         # image + deploy + invoke in one go, prerequisites checked first
+jolt image        # AL2023 Docker build -> dist/bootstrap + dist/lambda.zip (arm64 default)
 jolt deploy       # idempotent: create/update the IAM role + Lambda function
 jolt invoke       # single ad-hoc invoke, prints the response body + REPORT line
 jolt bench        # cold/warm boot-time comparison across memory tiers
 jolt teardown     # delete the function + role when you're done
 ```
 
-`jolt deploy`'s IAM role (`lambda-mvp-jlt-role`) and function
+`jolt image` builds for arm64 unless `LAMBDA_ARCH=x86_64` (or `amd64`) is set.
+Use that on an x86_64 Linux host without qemu, where an arm64 build fails with
+`exec format error`. `jolt deploy` picks up the architecture from the built
+binary. `jolt deploy`'s IAM role (`lambda-mvp-jlt-role`) and function
 (`lambda-mvp-jlt`) names are overridable via `LAMBDA_MVP_FUNCTION_NAME`.
 `jolt bench`'s memory tiers and warm-sample count are overridable via
 `BENCH_MEMORY_TIERS` (default `2048,3008`) and `BENCH_WARM_SAMPLES`
@@ -103,7 +107,7 @@ Fetch the base image out-of-band over direct HTTPS and point the build at it:
 
 ```sh
 brew install crane
-crane pull --platform linux/arm64 public.ecr.aws/amazonlinux/amazonlinux:2023 /tmp/al2023.tar
+crane pull --platform linux/arm64 public.ecr.aws/amazonlinux/amazonlinux:2023 /tmp/al2023.tar   # linux/amd64 with LAMBDA_ARCH=x86_64
 docker load -i /tmp/al2023.tar
 docker tag public.ecr.aws/amazonlinux/amazonlinux:2023 my-local/amazonlinux:2023
 BASE_IMAGE=my-local/amazonlinux:2023 jolt image
@@ -129,8 +133,6 @@ Not built here, but straightforward follow-ups if you need them:
 
 - A function URL + bearer token, for an HTTP-reachable demo instead of
   `aws lambda invoke` only.
-- x86_64 builds (same Dockerfile approach, different base image
-  architecture and jolt/Chez build targets).
 - A second, dependency-heavier handler, to isolate binary-size effects on
   cold init independent of the jolt-version comparison `jolt bench` already
   lets you reproduce.

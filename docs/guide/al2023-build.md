@@ -58,11 +58,21 @@ than a one-time historical claim.
 - These live in a **separate `RUN dnf install` layer placed after the Chez
   build** so fixing them doesn't invalidate the ~4-minute Chez layer.
 
-## arm64
+## arm64 and x86_64
 
-The build targets **linux/arm64** (native on Apple Silicon Docker, no qemu) and
-deploys to Lambda `--architectures arm64` (Graviton, cheaper per GB-second).
-Chez v10 supports aarch64le Linux; jolt's release binaries don't cover
-aarch64 Linux, but the from-source build works. For x86_64, the identical
-Dockerfile under `--platform linux/amd64` (qemu emulation on Apple Silicon:
-slow but automatic) is the path, not built or tested here.
+By default the build targets **linux/arm64** (native on Apple Silicon Docker,
+no qemu) and deploys to Lambda `--architectures arm64` (Graviton, cheaper per
+GB-second). Chez v10 supports aarch64le Linux; jolt's release binaries don't
+cover aarch64 Linux, but the from-source build works.
+
+`LAMBDA_ARCH=x86_64 jolt image` (`amd64` also accepted) builds the identical
+Dockerfile under `--platform linux/amd64` instead. `jolt deploy` reads the
+architecture from `dist/bootstrap`'s ELF header, so it always matches the last
+build, including when it switches an existing function's architecture.
+
+Building for the architecture your machine isn't needs qemu. Docker Desktop
+ships it; on a plain Linux Docker Engine, a missing emulator fails the first
+`RUN` with `exec /bin/sh: exec format error`. Either build natively (on an
+x86_64 Linux host, `LAMBDA_ARCH=x86_64`) or register the emulator, e.g.
+`docker run --privileged --rm tonistiigi/binfmt --install arm64`. Expect an
+emulated Chez build to be several times slower.

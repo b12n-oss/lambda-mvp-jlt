@@ -14,6 +14,7 @@
 (def function-name (or (System/getenv "LAMBDA_MVP_FUNCTION_NAME") "lambda-mvp-jlt"))
 (def role-name (str function-name "-role"))
 (def zip-path "dist/lambda.zip")
+(def bootstrap-path "dist/bootstrap")
 (def policy-arn "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole")
 
 (defn- sh [& args]
@@ -24,6 +25,20 @@
   (binding [*out* *err*]
     (apply println "lambda-mvp-jlt:" msg))
   (System/exit 1))
+
+(defn- bootstrap-arch
+  "Lambda --architectures value for the built binary, read from its ELF
+  e_machine field rather than an env var, so a deploy can never disagree
+  with whatever `jolt image` last built."
+  []
+  (let [header (byte-array 20)]
+    (with-open [in (java.io.FileInputStream. bootstrap-path)]
+      (.read in header))
+    (case (bit-or (bit-and (aget header 18) 0xff)
+                  (bit-shift-left (bit-and (aget header 19) 0xff) 8))
+      62 "x86_64"
+      183 "arm64"
+      (die! bootstrap-path "is not an x86_64 or arm64 ELF binary -- rerun `jolt image`."))))
 
 (defn- require-aws-identity!
   "Fail fast with a clear message if the aws CLI has no usable
@@ -76,13 +91,17 @@
   (zero? (:exit (sh "aws" "lambda" "get-function" "--function-name" function-name))))
 
 (defn- ensure-function! []
-  (when-not (.exists (java.io.File. zip-path))
-    (die! zip-path "not found -- run `jolt image` first."))
+  (doseq [path [zip-path bootstrap-path]]
+    (when-not (.exists (java.io.File. path))
+      (die! path "not found -- run `jolt image` first.")))
   (if (function-exists?)
     (do
-      (println "lambda-mvp-jlt: updating function code for" function-name)
+      (println "lambda-mvp-jlt: updating function code for" function-name (str "(" (bootstrap-arch) ")"))
+      ;; --architectures on update too: without it, a function created arm64
+      ;; keeps arm64 and an x86_64 zip fails at init with Runtime.InvalidEntrypoint.
       (let [{:keys [exit err]} (sh "aws" "lambda" "update-function-code"
                                    "--function-name" function-name
+                                   "--architectures" (bootstrap-arch)
                                    "--zip-file" (str "fileb://" zip-path))]
         (when-not (zero? exit) (die! "update-function-code failed:" err)))
       (let [{:keys [exit err]} (sh "aws" "lambda" "wait" "function-updated" "--function-name" function-name)]
@@ -92,11 +111,11 @@
                                    "--timeout" "15" "--memory-size" "2048")]
         (when-not (zero? exit) (die! "update-function-configuration failed:" err))))
     (do
-      (println "lambda-mvp-jlt: creating function" function-name)
+      (println "lambda-mvp-jlt: creating function" function-name (str "(" (bootstrap-arch) ")"))
       (let [{:keys [exit err]} (sh "aws" "lambda" "create-function"
                                    "--function-name" function-name
                                    "--runtime" "provided.al2023"
-                                   "--architectures" "arm64"
+                                   "--architectures" (bootstrap-arch)
                                    "--handler" "bootstrap"
                                    "--zip-file" (str "fileb://" zip-path)
                                    "--role" (role-arn)
