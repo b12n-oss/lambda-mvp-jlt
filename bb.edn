@@ -43,4 +43,13 @@
                                ".")))}
 
   clean {:doc "remove build artifacts"
-         :task (p/shell "rm -rf dist bootstrap bootstrap.build")}}}
+         :task (p/shell "rm -rf dist bootstrap bootstrap.build")}
+
+  deploy {:doc "idempotent: create/update the IAM role + Lambda function from your aws CLI config"
+          :task (p/shell "bb" "script/aws_lifecycle.clj" "deploy")}
+
+  invoke {:doc "single ad-hoc invoke, prints response + REPORT line"
+          :task (p/shell "bb" "script/aws_lifecycle.clj" "invoke")}
+
+  teardown {:doc "delete the function + role"
+            :task (p/shell "bb" "script/aws_lifecycle.clj" "teardown")}}}
