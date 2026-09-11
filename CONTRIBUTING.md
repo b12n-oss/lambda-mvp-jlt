@@ -80,7 +80,8 @@ commit messages, and code comments alike.
 - Stage files by explicit path. Please do not `git add -A`.
 - If the change touches `script/aws_lifecycle.clj` or
   `script/bench_run.clj`, say what you live-tested and against what
-  memory tier.
+  memory tier, and on which architecture (`arm64`/`x86_64`) if the change
+  could plausibly affect the `LAMBDA_ARCH`/`--architectures` path.
 
 ## AI-assisted contributions
 

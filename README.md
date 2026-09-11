@@ -27,7 +27,7 @@ exactly as it is.
 
 ```mermaid
 flowchart LR
-  subgraph zip["lambda.zip on provided.al2023 (arm64)"]
+  subgraph zip["lambda.zip on provided.al2023 (arm64 default)"]
     boot["bootstrap (jolt binary)<br/>runtime.clj loop + handler.clj"]
     libs["lib/*.so<br/>ssl · crypto · z"]
   end

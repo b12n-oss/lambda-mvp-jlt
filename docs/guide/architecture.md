@@ -23,7 +23,7 @@ flowchart TD
   end
 
   subgraph aws["Your AWS account"]
-    lambda["Lambda function<br/>provided.al2023, arm64"]
+    lambda["Lambda function<br/>provided.al2023, arm64 default"]
     cw["CloudWatch Logs<br/>REPORT lines"]
   end
 
@@ -56,7 +56,13 @@ See [Building on Amazon Linux 2023](al2023-build.md) for the glibc constraint in
 
 `script/aws_lifecycle.clj` is a small, generic (no hardcoded profile, account, or region) idempotent create-or-update-or-delete tool, driven entirely by whatever the caller's own `aws` CLI already has configured. `deploy!` creates the IAM role and Lambda function on first run and updates them on every later run; `invoke!` runs a single ad-hoc invocation; `teardown!` deletes both. `jolt deploy`/`jolt invoke`/`jolt teardown` are thin wrappers around it.
 
+`deploy!` never reads `LAMBDA_ARCH` itself. It reads the architecture out of the ELF header of the `dist/bootstrap` `jolt image` last built and passes `--architectures` on both create and update, so a deploy always matches the binary on disk and can flip an existing function's architecture on a later run.
+
 Every mutating AWS call checks its own exit code and fails loudly with the AWS CLI's own error text rather than reporting success on a call that actually failed. That discipline came from live testing during this project's own development: an early version silently reported a successful teardown even when a delete call had failed.
+
+## `jolt demo`: the same flow, one command
+
+`jolt demo` (`script/demo.clj`) runs `image`, `deploy` and `invoke` in order, after checking tools on PATH, AWS credentials and region, Docker daemon access, and that Docker can actually run containers for the target `LAMBDA_ARCH`. It's the same pieces described above, just sequenced with every failure mode checked up front instead of surfacing mid-build.
 
 ## The bench tool
 

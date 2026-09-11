@@ -30,4 +30,4 @@ Both need a local checkout of [`b12n-oss/docs-engine`](https://github.com/b12n-o
 
 ## Pull requests
 
-Open against `main`. Describe what changed and why, not just what. If the change touches `script/aws_lifecycle.clj` or `script/bench_run.clj`, say what you live-tested and against what memory tier.
+Open against `main`. Describe what changed and why, not just what. If the change touches `script/aws_lifecycle.clj` or `script/bench_run.clj`, say what you live-tested, against what memory tier, and on which architecture (`arm64`/`x86_64`) if the change could plausibly affect the `LAMBDA_ARCH`/`--architectures` path.
