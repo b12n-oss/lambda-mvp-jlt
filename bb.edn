@@ -52,4 +52,10 @@
           :task (p/shell "bb" "script/aws_lifecycle.clj" "invoke")}
 
   teardown {:doc "delete the function + role"
-            :task (p/shell "bb" "script/aws_lifecycle.clj" "teardown")}}}
+            :task (p/shell "bb" "script/aws_lifecycle.clj" "teardown")}
+
+  bench {:doc "cold/warm boot-time comparison across memory tiers"
+         :task (p/shell "bb" "script/bench_run.clj")}
+
+  test {:doc "run script/bench.clj's unit tests"
+        :task (p/shell "bb" "test/bench_test.clj")}}}
