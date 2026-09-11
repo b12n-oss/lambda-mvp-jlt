@@ -87,7 +87,7 @@
         (when-not (zero? exit) (die! "function did not reach Active state:" err)))
       (let [{:keys [exit err]} (sh "aws" "lambda" "update-function-configuration"
                                    "--function-name" function-name
-                                   "--timeout" "15" "--memory-size" "512")]
+                                   "--timeout" "15" "--memory-size" "2048")]
         (when-not (zero? exit) (die! "update-function-configuration failed:" err))))
     (do
       (println "lambda-mvp-jlt: creating function" function-name)
@@ -98,7 +98,7 @@
                                    "--handler" "bootstrap"
                                    "--zip-file" (str "fileb://" zip-path)
                                    "--role" (role-arn)
-                                   "--timeout" "15" "--memory-size" "512")]
+                                   "--timeout" "15" "--memory-size" "2048")]
         (when-not (zero? exit) (die! "create-function failed:" err)))))
   (let [{:keys [exit err]} (sh "aws" "lambda" "wait" "function-updated" "--function-name" function-name)]
     (when-not (zero? exit) (die! "function did not reach Active state:" err))))
