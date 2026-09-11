@@ -23,7 +23,7 @@ exactly how a warm sample is told apart from a cold one.
 
 ## What `bb bench` does
 
-For each memory tier in `BENCH_MEMORY_TIERS` (default `256,512,1024,2048`):
+For each memory tier in `BENCH_MEMORY_TIERS` (default `2048,3072,4096`):
 
 1. `aws lambda update-function-configuration --memory-size <tier>` — any
    configuration update invalidates the function's existing execution
@@ -35,6 +35,15 @@ For each memory tier in `BENCH_MEMORY_TIERS` (default `256,512,1024,2048`):
    change) — the warm samples, landing on the same execution environment.
 4. Prints a table: Cold Init Duration, Cold Duration, Warm Duration
    (min/median/max), Max Memory Used — one column per tier.
+
+The default tiers start at 2048 MB because jolt v0.8.5+ caps its heap at
+25% of the configured Lambda memory, and this runtime's baseline live
+heap (~250 MB, regardless of app size) needs at least that much
+headroom — below it, every invocation fails at boot with
+`JOLT_MAX_HEAP is smaller than the runtime's own live heap`, not a
+timing problem `bb bench` can usefully measure. If you lower
+`BENCH_MEMORY_TIERS` below ~2048 MB yourself, expect to see exactly
+that error rather than a number.
 
 Run it:
 
