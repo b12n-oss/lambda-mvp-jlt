@@ -6,11 +6,12 @@ response headers real Lambda sends), captures the runtime's POSTed
 responses, then answers 410 Gone so the runtime loop exits cleanly.
 Asserts one response per event and prints PASS/FAIL. Exit code 0/1.
 """
-import json
+import os
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-HOST, PORT = "127.0.0.1", 9001
+HOST = "127.0.0.1"
+PORT_FILE = ".mock-runtime-api-port"
 
 EVENTS = [b'{"name":"jolt","n":1}', b'{"name":"chez","n":2}']
 
@@ -63,26 +64,33 @@ def check_hello(responses):
 
 
 def main():
-    httpd = HTTPServer((HOST, PORT), MockRuntimeAPI)
+    httpd = HTTPServer((HOST, 0), MockRuntimeAPI)
     httpd.timeout = 30
-    print("mock-runtime-api: listening on %s:%d, %d events" % (HOST, PORT, len(EVENTS)))
-    while not state["done"]:
-        httpd.handle_request()
+    port = httpd.server_port
+    with open(PORT_FILE, "w") as f:
+        f.write(str(port))
+    print("mock-runtime-api: listening on %s:%d, %d events" % (HOST, port, len(EVENTS)))
+    try:
+        while not state["done"]:
+            httpd.handle_request()
 
-    ok = True
-    if len(state["responses"]) != len(EVENTS):
-        ok = False
-        print("FAIL: expected %d responses, got %d" % (len(EVENTS), len(state["responses"])))
-    for i, (path, body) in enumerate(state["responses"], 1):
-        want = "/runtime/invocation/req-%d/response" % i
-        if not path.endswith(want):
+        ok = True
+        if len(state["responses"]) != len(EVENTS):
             ok = False
-            print("FAIL: response %d posted to %s (want suffix %s)" % (i, path, want))
-        print("mock-runtime-api: response %d: %s" % (i, body))
-    if not check_hello(state["responses"]):
-        ok = False
-    print("mock-runtime-api: %s" % ("PASS" if ok else "FAIL"))
-    sys.exit(0 if ok else 1)
+            print("FAIL: expected %d responses, got %d" % (len(EVENTS), len(state["responses"])))
+        for i, (path, body) in enumerate(state["responses"], 1):
+            want = "/runtime/invocation/req-%d/response" % i
+            if not path.endswith(want):
+                ok = False
+                print("FAIL: response %d posted to %s (want suffix %s)" % (i, path, want))
+            print("mock-runtime-api: response %d: %s" % (i, body))
+        if not check_hello(state["responses"]):
+            ok = False
+        print("mock-runtime-api: %s" % ("PASS" if ok else "FAIL"))
+        sys.exit(0 if ok else 1)
+    finally:
+        if os.path.exists(PORT_FILE):
+            os.remove(PORT_FILE)
 
 
 if __name__ == "__main__":
