@@ -5,7 +5,7 @@
         :task (do (println "lambda-mvp-jlt -- a shareable AWS Lambda custom runtime in jolt")
                   (println "")
                   (println "  bb probe     offline e2e: mock Runtime API + jolt loop (no AWS, no Docker)")
-                  (println "  bb build     AL2023 Docker build -> dist/bootstrap + dist/lambda.zip")
+                  (println "  bb image     AL2023 Docker build -> dist/bootstrap + dist/lambda.zip")
                   (println "  bb deploy    idempotent: create/update the IAM role + Lambda function")
                   (println "  bb invoke    single ad-hoc invoke, prints response + REPORT line")
                   (println "  bb bench     cold/warm boot-time comparison across memory tiers")
@@ -13,4 +13,49 @@
                   (println "  bb teardown  delete the function + role")
                   (println "  bb clean     remove build artifacts")
                   (println "")
-                  (println "No task hardcodes an AWS profile, account, or region -- see README.md"))}}}
+                  (println "No task hardcodes an AWS profile, account, or region -- see README.md"))}
+
+  probe {:doc "offline e2e: mock Runtime API on an OS-assigned port + the demo handler"
+         :task (let [port-file ".mock-runtime-api-port"]
+                 (when (.exists (java.io.File. port-file)) (.delete (java.io.File. port-file)))
+                 (let [srv (p/process ["python3" "tools/mock_runtime_api.py"]
+                                      {:inherit true})]
+                   (loop [n 0]
+                     (when (and (not (.exists (java.io.File. port-file))) (< n 50))
+                       (Thread/sleep 100)
+                       (recur (inc n))))
+                   (if-not (.exists (java.io.File. port-file))
+                     (do (println "probe: mock server did not publish its port -- aborting")
+                         (System/exit 1))
+                     (let [port (.trim (slurp port-file))]
+                       (p/shell {:extra-env {"AWS_LAMBDA_RUNTIME_API" (str "127.0.0.1:" port)}}
+                                "joltc run -m net.b12n.lambda-mvp.main")
+                       (System/exit (:exit (deref srv)))))))}
+
+  image {:doc "build bootstrap + lambda.zip in an amazonlinux:2023 container (linux/arm64)"
+         :task (let [jolt-version (System/getenv "JOLT_VERSION")
+                     chez-version (System/getenv "CHEZ_VERSION")
+                     base (System/getenv "BASE_IMAGE")]
+                 (p/shell (str "docker build --target export --output dist --platform linux/arm64 "
+                               (if jolt-version (str "--build-arg JOLT_VERSION=" jolt-version " ") "")
+                               (if chez-version (str "--build-arg CHEZ_VERSION=" chez-version " ") "")
+                               (if base (str "--build-arg BASE_IMAGE=" base " ") "")
+                               ".")))}
+
+  clean {:doc "remove build artifacts"
+         :task (p/shell "rm -rf dist bootstrap bootstrap.build")}
+
+  deploy {:doc "idempotent: create/update the IAM role + Lambda function from your aws CLI config"
+          :task (p/shell "bb" "script/aws_lifecycle.clj" "deploy")}
+
+  invoke {:doc "single ad-hoc invoke, prints response + REPORT line"
+          :task (p/shell "bb" "script/aws_lifecycle.clj" "invoke")}
+
+  teardown {:doc "delete the function + role"
+            :task (p/shell "bb" "script/aws_lifecycle.clj" "teardown")}
+
+  bench {:doc "cold/warm boot-time comparison across memory tiers"
+         :task (p/shell "bb" "script/bench_run.clj")}
+
+  test {:doc "run script/bench.clj's unit tests"
+        :task (p/shell "bb" "test/bench_test.clj")}}}
