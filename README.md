@@ -73,7 +73,7 @@ bb teardown     # delete the function + role when you're done
 `bb deploy`'s IAM role (`lambda-mvp-jlt-role`) and function
 (`lambda-mvp-jlt`) names are overridable via `LAMBDA_MVP_FUNCTION_NAME`.
 `bb bench`'s memory tiers and warm-sample count are overridable via
-`BENCH_MEMORY_TIERS` (default `2048,3072,4096`) and `BENCH_WARM_SAMPLES`
+`BENCH_MEMORY_TIERS` (default `2048,3008`) and `BENCH_WARM_SAMPLES`
 (default `5`).
 
 ## Cold vs. warm boot time

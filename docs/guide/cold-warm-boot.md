@@ -23,7 +23,7 @@ exactly how a warm sample is told apart from a cold one.
 
 ## What `bb bench` does
 
-For each memory tier in `BENCH_MEMORY_TIERS` (default `2048,3072,4096`):
+For each memory tier in `BENCH_MEMORY_TIERS` (default `2048,3008`):
 
 1. `aws lambda update-function-configuration --memory-size <tier>` — any
    configuration update invalidates the function's existing execution
