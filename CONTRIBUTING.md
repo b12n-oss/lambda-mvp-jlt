@@ -3,7 +3,7 @@
 Issues and pull requests are welcome. This is the short version of what a
 change needs to pass. The longer, narrative version lives at
 [`docs/guide/contributing.md`](docs/guide/contributing.md) and renders
-through [docs-engine](https://github.com/b12n-oss/docs-engine).
+through [docs-engine](https://github.com/jlt-commons/docs-engine).
 
 ## Status
 
