@@ -13,7 +13,11 @@
 (def base-image (or (System/getenv "BASE_IMAGE") "public.ecr.aws/amazonlinux/amazonlinux:2023"))
 
 (defn- sh [& args]
-  (let [{:keys [exit out err]} (apply p/shell {:out :string :err :string :continue true} args)]
+  (let [{:keys [exit out err]}
+        (apply p/shell {:out :string :err :string :continue true
+                        :extra-env (script.localstack/credentials-env
+                                    (System/getenv) localstack-endpoint)}
+               (script.localstack/with-endpoint args localstack-endpoint))]
     {:exit exit :out out :err err}))
 
 (defn- die! [& msg]
@@ -27,6 +31,12 @@
             "-- see Prerequisites in docs/guide/getting-started.md."))))
 
 (defn- require-aws! []
+  (if localstack-endpoint
+    (println "lambda-mvp-jlt: LAMBDA_ENDPOINT_URL set -- using" localstack-endpoint
+             "; skipping the real-AWS credential/region checks")
+    (require-real-aws!)))
+
+(defn- require-real-aws! []
   (let [region (some not-empty [(System/getenv "AWS_REGION")
                                 (System/getenv "AWS_DEFAULT_REGION")
                                 (str/trim (:out (sh "aws" "configure" "get" "region")))])]

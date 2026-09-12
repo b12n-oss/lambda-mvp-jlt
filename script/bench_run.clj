@@ -20,7 +20,11 @@
   (Integer/parseInt (or (System/getenv "BENCH_WARM_SAMPLES") "5")))
 
 (defn- sh [& args]
-  (let [{:keys [exit out err]} (apply p/shell {:out :string :err :string :continue true} args)]
+  (let [{:keys [exit out err]}
+        (apply p/shell {:out :string :err :string :continue true
+                        :extra-env (script.localstack/credentials-env
+                                    (System/getenv) localstack-endpoint)}
+               (script.localstack/with-endpoint args localstack-endpoint))]
     {:exit exit :out out :err err}))
 
 (defn- die! [& msg]
@@ -31,11 +35,14 @@
   "Fail fast with a clear message if the aws CLI has no usable
   credentials/region, rather than letting a later call fail obscurely."
   []
-  (let [{:keys [exit err]} (sh "aws" "sts" "get-caller-identity" "--output" "json")]
-    (when-not (zero? exit)
-      (die! "aws CLI has no usable credentials/region."
-            "Set AWS_PROFILE/AWS_REGION or run `aws configure`, then retry.\n"
-            (str/trim (or err ""))))))
+  (if localstack-endpoint
+    (println "lambda-mvp-jlt: LAMBDA_ENDPOINT_URL set -- using" localstack-endpoint
+             "; skipping the real-AWS identity check")
+    (let [{:keys [exit err]} (sh "aws" "sts" "get-caller-identity" "--output" "json")]
+      (when-not (zero? exit)
+        (die! "aws CLI has no usable credentials/region."
+              "Set AWS_PROFILE/AWS_REGION or run `aws configure`, then retry.\n"
+              (str/trim (or err "")))))))
 
 (defn- set-memory! [tier]
   (let [{:keys [exit err]} (sh "aws" "lambda" "update-function-configuration"
