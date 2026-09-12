@@ -140,6 +140,9 @@ Not built here, but straightforward follow-ups if you need them:
 ## References
 
 - [Jolt](https://github.com/jolt-lang/jolt) · [jolt examples](https://github.com/jolt-lang/examples)
+- [lambda-mvp-jnk](https://github.com/b12n-oss/lambda-mvp-jnk) (the jank
+  sibling) · [lambda-mvp-cljs](https://github.com/b12n-oss/lambda-mvp-cljs)
+  (the ClojureScript sibling)
 - [AWS Lambda Runtime API / custom runtimes](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-custom.html)
 - [awslabs/aws-lambda-cpp](https://github.com/awslabs/aws-lambda-cpp): the C++
   implementation of the same contract
