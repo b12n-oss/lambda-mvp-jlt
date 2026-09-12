@@ -8,3 +8,5 @@ bootstrap.build/
 .remember/
 .mock-runtime-api-port
 _site/
+.clj-kondo/
+.lsp/
