@@ -25,6 +25,7 @@ Every AWS-touching command in this repo relies entirely on the caller's own `aws
 | [The Runtime API loop](runtime-api-loop.md) | The Lambda custom-runtime contract and this project's implementation |
 | [Building on Amazon Linux 2023](al2023-build.md) | The glibc constraint, the from-source build recipe, arm64 |
 | [Cold vs. warm boot](cold-warm-boot.md) | What `jolt bench` measures and how to reproduce the comparison |
+| [Running against LocalStack](localstack.md) | Deploy/invoke/teardown with no AWS account, via `LAMBDA_ENDPOINT_URL` |
 | [Contributing](contributing.md) | Build, test, and PR conventions |
 
 ## Find your scenario
@@ -34,6 +35,7 @@ Every AWS-touching command in this repo relies entirely on the caller's own `aws
 | "I want to try this out" | Getting started |
 | "I want to understand how it works" | Architecture, then The Runtime API loop and Building on Amazon Linux 2023 |
 | "I want to measure cold/warm boot time on my own account" | Getting started, then Cold vs. warm boot |
+| "I want the full lifecycle without an AWS account" | Running against LocalStack |
 | "I want to contribute a change" | Contributing |
 
 ## See also

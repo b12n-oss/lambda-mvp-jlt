@@ -11,14 +11,30 @@
             [cheshire.core :as json]
             [clojure.string :as str]))
 
+;; bb script/x.clj does not put the project root on the classpath, so the
+;; helper ns is loaded via load-file and referenced fully qualified (same
+;; pattern as script/bench_run.clj loading script/bench.clj).
+(load-file "script/localstack.clj")
+
 (def function-name (or (System/getenv "LAMBDA_MVP_FUNCTION_NAME") "lambda-mvp-jlt"))
+
+(def localstack-endpoint
+  "Non-nil when LAMBDA_ENDPOINT_URL is set: every aws call below is redirected
+   there (normally a LocalStack on localhost) with dummy credentials, so the
+   same lifecycle runs against a local emulator instead of a real account."
+  (script.localstack/endpoint (System/getenv)))
+
 (def role-name (str function-name "-role"))
 (def zip-path "dist/lambda.zip")
 (def bootstrap-path "dist/bootstrap")
 (def policy-arn "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole")
 
 (defn- sh [& args]
-  (let [{:keys [exit out err]} (apply p/shell {:out :string :err :string :continue true} args)]
+  (let [{:keys [exit out err]}
+        (apply p/shell {:out :string :err :string :continue true
+                        :extra-env (script.localstack/credentials-env
+                                    (System/getenv) localstack-endpoint)}
+               (script.localstack/with-endpoint args localstack-endpoint))]
     {:exit exit :out out :err err}))
 
 (defn- die! [& msg]
@@ -44,11 +60,14 @@
   "Fail fast with a clear message if the aws CLI has no usable
   credentials/region, rather than letting a later call fail obscurely."
   []
-  (let [{:keys [exit err]} (sh "aws" "sts" "get-caller-identity" "--output" "json")]
-    (when-not (zero? exit)
-      (die! "aws CLI has no usable credentials/region."
-            "Set AWS_PROFILE/AWS_REGION or run `aws configure`, then retry.\n"
-            (str/trim (or err ""))))))
+  (if localstack-endpoint
+    (println "lambda-mvp-jlt: LAMBDA_ENDPOINT_URL set -- using" localstack-endpoint
+             "; skipping the real-AWS identity check")
+    (let [{:keys [exit err]} (sh "aws" "sts" "get-caller-identity" "--output" "json")]
+      (when-not (zero? exit)
+        (die! "aws CLI has no usable credentials/region."
+              "Set AWS_PROFILE/AWS_REGION or run `aws configure`, then retry.\n"
+              (str/trim (or err "")))))))
 
 (def ^:private trust-policy
   (json/generate-string

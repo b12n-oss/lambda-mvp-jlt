@@ -73,11 +73,12 @@ See `docs/guide/runtime-api-loop.md` for the loop's design notes and
 
 ```sh
 jolt probe        # offline e2e: mock Runtime API + demo handler (no AWS, no Docker)
-jolt test         # run script/bench.clj's unit tests (no AWS, no Docker)
+jolt test         # run the unit tests (no AWS, no Docker)
 jolt demo         # image + deploy + invoke in one go, prerequisites checked first
 jolt image        # AL2023 Docker build -> dist/bootstrap + dist/lambda.zip (arm64 default)
 jolt deploy       # idempotent: create/update the IAM role + Lambda function
 jolt invoke       # single ad-hoc invoke, prints the response body + REPORT line
+jolt localstack:demo  # LocalStack variant: start it, deploy, invoke -- no AWS account
 jolt bench        # cold/warm boot-time comparison across memory tiers
 jolt teardown     # delete the function + role when you're done
 ```
@@ -90,6 +91,26 @@ binary. `jolt deploy`'s IAM role (`lambda-mvp-jlt-role`) and function
 `jolt bench`'s memory tiers and warm-sample count are overridable via
 `BENCH_MEMORY_TIERS` (default `2048,3008`) and `BENCH_WARM_SAMPLES`
 (default `5`).
+
+## Running locally against LocalStack
+
+Every AWS-touching task here also runs against
+[LocalStack](https://localstack.cloud) instead of a real account:
+
+```sh
+jolt image              # as usual: build dist/lambda.zip first
+jolt localstack:demo    # start LocalStack + deploy + invoke, no AWS account
+jolt localstack:status  # is the container up, is the edge answering?
+jolt localstack:stop    # stop + remove the container
+```
+
+The switch is one env var: `LAMBDA_ENDPOINT_URL` (set to
+`http://localhost:4566` by the wrapper). Set, it redirects every `aws` call
+this repo's scripts make to that endpoint and skips the real-AWS credential
+preflight; unset, behavior is exactly as before. See
+[docs/guide/localstack.md](docs/guide/localstack.md) for details — including
+why you shouldn't trust LocalStack numbers for the cold/warm boot question
+`jolt bench` exists to answer.
 
 ## Cold vs. warm boot time
 

@@ -49,8 +49,9 @@
                   (println "  jolt image       AL2023 Docker build -> dist/bootstrap + dist/lambda.zip")
                   (println "  jolt deploy      idempotent: create/update the IAM role + Lambda function")
                   (println "  jolt invoke      single ad-hoc invoke, prints response + REPORT line")
-                  (println "  jolt bench       cold/warm boot-time comparison across memory tiers")
-                  (println "  jolt test        run script/bench.clj's unit tests")
+                   (println "  jolt bench       cold/warm boot-time comparison across memory tiers")
+                   (println "  jolt localstack:demo  LocalStack variant: start it, deploy, invoke -- no AWS account")
+                   (println "  jolt test        run the unit tests (bench + localstack helpers)")
                   (println "  jolt teardown    delete the function + role")
                   (println "  jolt clean       remove build artifacts")
                   (println "  jolt site:build  build the docs site into _site/ (needs a docs-engine checkout)")
@@ -63,21 +64,25 @@
                   (println "No task hardcodes an AWS profile, account, or region -- see README.md"))}
 
   probe {:doc "offline e2e: mock Runtime API on an OS-assigned port + the demo handler"
-         :task (let [port-file ".mock-runtime-api-port"]
-                 (when (.exists (java.io.File. port-file)) (.delete (java.io.File. port-file)))
-                 (let [srv (p/process ["python3" "tools/mock_runtime_api.py"]
-                                      {:inherit true})]
-                   (loop [n 0]
-                     (when (and (not (.exists (java.io.File. port-file))) (< n 50))
-                       (Thread/sleep 100)
-                       (recur (inc n))))
-                   (if-not (.exists (java.io.File. port-file))
-                     (do (println "probe: mock server did not publish its port -- aborting")
-                         (System/exit 1))
-                     (let [port (.trim (slurp port-file))]
-                       (p/shell {:extra-env {"AWS_LAMBDA_RUNTIME_API" (str "127.0.0.1:" port)}}
-                                "joltc run -m net.b12n.lambda-mvp.main")
-                       (System/exit (:exit (deref srv)))))))}
+         :task (do (when-not (fs/which "joltc")
+                      (println "probe: joltc is not on PATH -- install jolt with the compiler")
+                      (println "        (brew install jolt-lang/jolt/jolt) and retry.")
+                      (System/exit 1))
+                  (let [port-file ".mock-runtime-api-port"]
+                    (when (.exists (java.io.File. port-file)) (.delete (java.io.File. port-file)))
+                    (let [srv (p/process ["python3" "tools/mock_runtime_api.py"]
+                                         {:inherit true})]
+                      (loop [n 0]
+                        (when (and (not (.exists (java.io.File. port-file))) (< n 50))
+                          (Thread/sleep 100)
+                          (recur (inc n))))
+                      (if-not (.exists (java.io.File. port-file))
+                        (do (println "probe: mock server did not publish its port -- aborting")
+                            (System/exit 1))
+                        (let [port (.trim (slurp port-file))]
+                          (p/shell {:extra-env {"AWS_LAMBDA_RUNTIME_API" (str "127.0.0.1:" port)}}
+                                   "joltc run -m net.b12n.lambda-mvp.main")
+                          (System/exit (:exit (deref srv))))))))}
 
   image {:doc "build bootstrap + lambda.zip in an amazonlinux:2023 container (LAMBDA_ARCH, default arm64)"
          :task (let [jolt-version (System/getenv "JOLT_VERSION")
@@ -114,8 +119,21 @@
   bench {:doc "cold/warm boot-time comparison across memory tiers"
          :task (p/shell "bb" "script/bench_run.clj")}
 
-  test {:doc "run script/bench.clj's unit tests"
-        :task (p/shell "bb" "test/bench_test.clj")}
+  localstack:start {:doc "start a LocalStack container (edge on localhost:4566) for local, no-AWS deploys"
+                    :task (p/shell "bb" "script/localstack_run.clj" "start")}
+
+  localstack:demo {:doc "start LocalStack (if needed), deploy the built zip to it, invoke -- no AWS account touched"
+                   :task (p/shell "bb" "script/localstack_run.clj" "demo")}
+
+  localstack:stop {:doc "stop + remove the LocalStack container"
+                   :task (p/shell "bb" "script/localstack_run.clj" "stop")}
+
+  localstack:status {:doc "is the LocalStack container up, and is its edge answering?"
+                     :task (p/shell "bb" "script/localstack_run.clj" "status")}
+
+  test {:doc "run the unit tests (bench + localstack helpers)"
+        :task (do (p/shell "bb" "test/localstack_test.clj")
+                  (p/shell "bb" "test/bench_test.clj"))}
 
   site:build {:doc "build the docs site into _site/ (needs a docs-engine checkout)"
               :task (site-task "build")}
