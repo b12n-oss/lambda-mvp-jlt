@@ -82,13 +82,32 @@ v0.8.7, arm64, `provided.al2023`, 2026-09-12, two regions back to back:
 Same as **illustrative, not a live guarantee**: a single run each, and the
 spread between tiers and regions above (down to ~2 ms warm, Cold Init
 anywhere from ~290 to ~400 ms) is itself the point, not a precise number to
-target. Max Memory Used holding at 164 MB across every tier and region is
-the more reliable observation: notably below the ~250 MB baseline the
-section above describes for jolt v0.8.6 and earlier, consistent with
-v0.8.7's own changelog crediting binary-size and resident-memory cuts
-(a hello-world example there went from 225 MB to 95 MB resident). That's
-plausible as the same effect showing up here, but not confirmed as one:
-it needs an actual v0.8.6-vs-v0.8.7 A/B on this same binary, not run yet.
+target.
+
+### v0.8.6 vs v0.8.7, confirmed
+
+The 164 MB above is notably below the ~250 MB baseline the section below
+describes for jolt v0.8.6 and earlier, and v0.8.7's own changelog credits
+binary-size and resident-memory cuts (a hello-world example there went from
+225 MB to 95 MB resident). Confirmed against this repo's own binary, not
+just plausible: same function, same region (ap-southeast-2), same memory
+tiers, redeployed with `JOLT_VERSION=0.8.6` then `JOLT_VERSION=0.8.7`
+back to back, 2026-09-12.
+
+| Metric | 0.8.6, 2048 MB | 0.8.6, 3008 MB | 0.8.7, 2048 MB | 0.8.7, 3008 MB |
+|---|---|---|---|---|
+| Cold Init Duration | 587.5 ms | 590.3 ms | 399.1 ms | 317.9 ms |
+| Cold Duration | 1.9 ms | 2.2 ms | 2.4 ms | 2.3 ms |
+| Warm Duration (min/median/max) | 1.7 / 1.8 / 1.9 ms | 1.8 / 1.9 / 2.1 ms | 2.1 / 2.2 / 2.5 ms | 1.8 / 2.0 / 3.0 ms |
+| Max Memory Used | 317 MB | 317 MB | 164 MB | 164 MB |
+
+`dist/bootstrap` itself shrank the same way: 34.4 MB under 0.8.6 down to
+15.1 MB under 0.8.7. Max Memory Used roughly halved and Cold Init Duration
+dropped by 30-46% at both tiers, in the direction the changelog claims and
+by a margin too large to be tier-to-tier noise. Warm Duration moved the
+other way slightly, still low single-digit milliseconds either version, not
+a meaningful difference at this sample size (one warm-sample run per tier
+per version).
 
 ## What the source research project found
 
