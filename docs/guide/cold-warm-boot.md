@@ -84,6 +84,12 @@ spread between tiers and regions above (down to ~2 ms warm, Cold Init
 anywhere from ~290 to ~400 ms) is itself the point, not a precise number to
 target.
 
+That table stays here as the record of what v0.8.7 did, and it was measured
+while v0.8.7 was this repo's default. The default is now v0.8.9, so for
+current-default numbers read
+[v0.8.7 vs v0.8.9](#v087-vs-v089-three-runs-each) below, which measures both
+versions on the same function on the same day.
+
 ### v0.8.6 vs v0.8.7, confirmed
 
 The 164 MB above is notably below the ~250 MB baseline the section below
@@ -109,6 +115,55 @@ other way slightly, still low single-digit milliseconds either version, not
 a meaningful difference at this sample size (one warm-sample run per tier
 per version).
 
+### v0.8.7 vs v0.8.9, three runs each
+
+jolt v0.8.9 landed on 2026-09-18. Its changelog is mostly about `jolt.loader`,
+a real `java.util.zip` on the zlib every binary already links, and lock-free
+atoms that let parallel Clojure scale again, so nothing in it promises a faster
+Lambda cold start directly. Measured anyway, against this repo's own binary,
+same function, same region (`ap-southeast-2`), redeployed with
+`JOLT_VERSION=0.8.7` then `JOLT_VERSION=0.8.9` back to back on 2026-09-19.
+
+Cold Init Duration is the noisiest number `jolt bench` produces, and one sample
+per tier cannot tell a version change apart from whatever hardware AWS handed
+out that minute. So this table reports the median of **three** `jolt bench` runs
+per version per tier, with the Cold Init range beside it:
+
+| Metric | 0.8.7, 2048 MB | 0.8.9, 2048 MB | 0.8.7, 3008 MB | 0.8.9, 3008 MB |
+|---|---|---|---|---|
+| Cold Init Duration (median of 3) | 407.4 ms | 361.6 ms | 311.0 ms | 346.1 ms |
+| Cold Init Duration (range of 3) | 326-446 ms | 358-438 ms | 310-311 ms | 334-437 ms |
+| Cold Duration (median of 3) | 2.3 ms | 1.8 ms | 2.1 ms | 1.9 ms |
+| Warm Duration (median of the 3 medians) | 2.1 ms | 1.7 ms | 1.8 ms | 1.7 ms |
+| Max Memory Used | 164 MB | 182 MB | 164 MB | 182 MB |
+
+Three things fall out of it, and only one is the speed-up the release suggests.
+
+**The handler itself got faster, at both tiers.** Cold Duration dropped from
+2.3 to 1.8 ms at 2048 MB and from 2.1 to 1.9 ms at 3008 MB. Across all six
+cold samples per version the two distributions barely touch: 0.8.9's slowest
+was 2.1 ms and 0.8.7's fastest was 2.0 ms. Warm Duration moved the same way,
+2.1 down to 1.7 ms and 1.8 down to 1.7 ms. The absolute numbers are tiny, so
+read this as a consistent direction rather than a headline.
+
+**Cold Init did not measurably improve.** The 2048 MB median looks better and
+the 3008 MB median looks worse, while the two versions' ranges overlap heavily
+at both tiers. On this binary and this account, moving v0.8.7 to v0.8.9 buys
+nothing at boot that three runs per tier can separate from noise.
+
+**Memory went up.** Max Memory Used moved from 164 MB to 182 MB, roughly 11%
+more, and it held steady across every run either way. `dist/bootstrap` grew
+with it, from 15,099,280 bytes under 0.8.7 to 16,895,672 under 0.8.9, roughly
+12%. That direction matters here because the v0.8.5 heap ceiling ties the
+usable memory tiers to the runtime's own live heap, so a runtime carrying more
+of it eats into the headroom the 2048 MB floor exists to provide.
+
+One more check worth recording: rebuilding v0.8.7 today produced a
+`dist/bootstrap` of 15,099,280 bytes, which is the same 15.1 MB the
+v0.8.6-vs-v0.8.7 section above recorded a week earlier, and its bench numbers
+landed within a few percent of that run. The build is reproducible, so the
+0.8.9 deltas above are a property of the version rather than of the day.
+
 ## What the source research project found
 
 Measured in the private project this repo was extracted from (`us-east-1`,
@@ -117,7 +172,7 @@ guarantee**; your numbers will differ by account, region, and the hardware
 allocation AWS happens to give you). They were measured against that project's
 then-current jolt v0.7.14 pin, before the v0.8.5 heap ceiling existed, so the
 256 and 512 MB tiers shown below are not reproducible against this repo's own
-jolt v0.8.7 default, for the reason the heap-ceiling note above describes:
+jolt v0.8.9 default, for the reason the heap-ceiling note above describes:
 
 | Metric | 256 MB | 512 MB |
 |---|---|---|
@@ -146,7 +201,7 @@ binary rather than taking the number on faith:
 
 ```sh
 JOLT_VERSION=0.7.14 jolt image && jolt deploy && jolt bench   # note the table
-JOLT_VERSION=0.8.7  jolt image && jolt deploy && jolt bench   # compare
+JOLT_VERSION=0.8.9  jolt image && jolt deploy && jolt bench   # compare
 jolt teardown
 ```
 

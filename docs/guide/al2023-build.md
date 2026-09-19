@@ -25,7 +25,7 @@ Mirrors jolt's own CI (`.github/workflows/tests.yml`) transplanted to dnf:
    self-contained executable. A `chez` wrapper execing `/opt/chez/bin/scheme`
    goes next to `scheme` so jolt's build derives the kernel-file location
    from it.
-2. **Jolt from a fresh clone** (`JOLT_VERSION` build arg, default `0.8.7`,
+2. **Jolt from a fresh clone** (`JOLT_VERSION` build arg, default `0.8.9`,
    `--recurse-submodules`). Its bootstrap seed is checked in: clone and run,
    no build step.
 3. `joltc build -m net.b12n.lambda-mvp.main -o bootstrap`: fetches the
