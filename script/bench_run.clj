@@ -5,12 +5,19 @@
   table. See docs/guide/cold-warm-boot.md.")
 
 (load-file "script/bench.clj")
+(load-file "script/localstack.clj")
 
 (require '[babashka.process :as p]
          '[cheshire.core :as json]
          '[clojure.string :as str])
 
 (def function-name (or (System/getenv "LAMBDA_MVP_FUNCTION_NAME") "lambda-mvp-jlt"))
+
+(def localstack-endpoint
+  "Non-nil when LAMBDA_ENDPOINT_URL is set: every aws call below is redirected
+   there (normally a LocalStack on localhost) with dummy credentials, so the
+   same bench runs against a local emulator instead of a real account."
+  (script.localstack/endpoint (System/getenv)))
 
 (def memory-tiers
   (mapv #(Integer/parseInt (str/trim %))
