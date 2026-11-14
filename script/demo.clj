@@ -9,6 +9,14 @@
             [cheshire.core :as json]
             [clojure.string :as str]))
 
+;; bb script/x.clj does not put the project root on the classpath, so the
+;; helper ns is loaded via load-file and referenced fully qualified.
+(load-file "script/localstack.clj")
+
+(def localstack-endpoint
+  "Non-nil when LAMBDA_ENDPOINT_URL is set: every aws call is redirected there."
+  (script.localstack/endpoint (System/getenv)))
+
 (def arch (or (System/getenv "LAMBDA_ARCH") "arm64"))
 (def base-image (or (System/getenv "BASE_IMAGE") "public.ecr.aws/amazonlinux/amazonlinux:2023"))
 
@@ -30,12 +38,6 @@
       (die! "not on PATH:" (str/join ", " missing)
             "-- see Prerequisites in docs/guide/getting-started.md."))))
 
-(defn- require-aws! []
-  (if localstack-endpoint
-    (println "lambda-mvp-jlt: LAMBDA_ENDPOINT_URL set -- using" localstack-endpoint
-             "; skipping the real-AWS credential/region checks")
-    (require-real-aws!)))
-
 (defn- require-real-aws! []
   (let [region (some not-empty [(System/getenv "AWS_REGION")
                                 (System/getenv "AWS_DEFAULT_REGION")
@@ -49,6 +51,12 @@
               (str/trim (or err ""))))
       (let [{:strs [Account Arn]} (json/parse-string out)]
         (println "lambda-mvp-jlt: will deploy to account" Account "in" region "as" Arn)))))
+
+(defn- require-aws! []
+  (if localstack-endpoint
+    (println "lambda-mvp-jlt: LAMBDA_ENDPOINT_URL set -- using" localstack-endpoint
+             "; skipping the real-AWS credential/region checks")
+    (require-real-aws!)))
 
 (defn- require-docker! []
   (let [{:keys [exit err]} (sh "docker" "info")]
