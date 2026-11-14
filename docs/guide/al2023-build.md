@@ -18,16 +18,22 @@ built by a **from-source jolt running on AL2023 itself**, so it links 2.34.
 
 Mirrors jolt's own CI (`.github/workflows/tests.yml`) transplanted to dnf:
 
-1. **Chez Scheme from source** (`CHEZ_VERSION` build arg, default `10.4.1`),
+1. **Jolt from a fresh clone** (`JOLT_VERSION` build arg, default `0.8.27`,
+   `--recurse-submodules`). Its bootstrap seed is checked in: clone and run,
+   no build step. It's cloned before Chez because the Chez build applies the
+   kernel patches this checkout carries.
+2. **Chez Scheme from source** (`CHEZ_VERSION` build arg, default `10.4.1`),
    `./configure --installprefix=/opt/chez --threads --disable-x11`. From
    source because distro chez packages ship no **kernel dev files**
    (`libkernel.a`, `scheme.h`), which `joltc build` needs to link the
-   self-contained executable. A `chez` wrapper execing `/opt/chez/bin/scheme`
-   goes next to `scheme` so jolt's build derives the kernel-file location
-   from it.
-2. **Jolt from a fresh clone** (`JOLT_VERSION` build arg, default `0.8.9`,
-   `--recurse-submodules`). Its bootstrap seed is checked in: clone and run,
-   no build step.
+   self-contained executable. With `CHEZ_PATCHES=1` (the default) the tree
+   first gets jolt's own kernel patches via jolt's `ci/apply-chez-patches.sh`,
+   the same patched Chez jolt's CI and releases build with. That script exists
+   from jolt v0.8.10 on, and it needs `patch` and `cmp` (`diffutils`); without
+   `cmp` it fails with a misleading "has CRLF line endings" message.
+   `CHEZ_PATCHES=0`, or an older `JOLT_VERSION`, builds stock Chez. A `chez`
+   wrapper execing `/opt/chez/bin/scheme` goes next to `scheme` so jolt's
+   build derives the kernel-file location from it.
 3. `joltc build -m net.b12n.lambda-mvp.main -o bootstrap`: fetches the
    `deps.edn` git deps, compiles app + runtime + stdlib, links one executable.
 4. **`ldd` audit → `lib/`**: every non-glibc `.so` the binary links is copied

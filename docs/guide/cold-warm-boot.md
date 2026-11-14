@@ -85,10 +85,9 @@ anywhere from ~290 to ~400 ms) is itself the point, not a precise number to
 target.
 
 That table stays here as the record of what v0.8.7 did, and it was measured
-while v0.8.7 was this repo's default. The default is now v0.8.9, so for
-current-default numbers read
-[v0.8.7 vs v0.8.9](#v087-vs-v089-three-runs-each) below, which measures both
-versions on the same function on the same day.
+while v0.8.7 was this repo's default. The default is now v0.8.27 built on
+jolt's patched Chez, so for current-default numbers read
+[v0.8.9 vs v0.8.27](#v089-vs-v0827-and-the-patched-chez) below.
 
 ### v0.8.6 vs v0.8.7, confirmed
 
@@ -164,6 +163,59 @@ v0.8.6-vs-v0.8.7 section above recorded a week earlier, and its bench numbers
 landed within a few percent of that run. The build is reproducible, so the
 0.8.9 deltas above are a property of the version rather than of the day.
 
+### v0.8.9 vs v0.8.27, and the patched Chez
+
+jolt v0.8.27 landed on 2026-11-12, eighteen releases after v0.8.9. Two things
+changed for this repo's build besides the version. From v0.8.10 on, jolt's CI
+and releases build Chez with seven of jolt's own kernel patches
+(`host/chez/chez-patches/`: lock-free thread activation, loading the boot
+image in place, sharing vfasl strings, and four smaller fixes), applied by
+jolt's `ci/apply-chez-patches.sh`. Stock Chez still works, so the Dockerfile
+now has `CHEZ_PATCHES` (default `1`) and both were measured.
+
+Three builds, the same function, `ap-southeast-2`, arm64, 2026-11-14, three
+`jolt bench` runs each. Stock 0.8.27 ran twice, once before and once after the
+patched build, so its column is the median of six runs. That second round was
+there to check whether deploy order moved anything, and it didn't by more than
+the noise.
+
+| Metric | 0.8.9, 2048 MB | 0.8.27 stock, 2048 MB | 0.8.27 patched, 2048 MB | 0.8.9, 3008 MB | 0.8.27 stock, 3008 MB | 0.8.27 patched, 3008 MB |
+|---|---|---|---|---|---|---|
+| Cold Init Duration (median) | 319.4 ms | 392.6 ms | 477.1 ms | 425.7 ms | 484.9 ms | 349.3 ms |
+| Cold Init Duration (range) | 311-496 ms | 385-518 ms | 374-480 ms | 416-432 ms | 359-504 ms | 348-460 ms |
+| Cold Duration (median) | 1.6 ms | 2.0 ms | 2.2 ms | 2.1 ms | 2.1 ms | 1.9 ms |
+| Warm Duration (median of medians) | 1.7 ms | 1.8 ms | 2.0 ms | 1.9 ms | 1.9 ms | 1.7 ms |
+| Max Memory Used | 178 MB | 150-157 MB | 128-129 MB | 178 MB | 151-156 MB | 128-129 MB |
+
+| Artifact | 0.8.9 | 0.8.27 stock | 0.8.27 patched |
+|---|---|---|---|
+| `dist/bootstrap` | 16,895,728 bytes | 20,578,056 bytes | 20,054,232 bytes |
+| `dist/lambda.zip` | 12,741,724 bytes | 15,626,168 bytes | 15,250,138 bytes |
+
+**Memory is the real result.** Max Memory Used fell from 178 MB to about
+152 MB on stock Chez, and to 128 MB on the patched one, 28% below v0.8.9. It
+held within a few megabytes across every run. The patches account for about
+24 MB of that by themselves, which is the strongest reason to build with them.
+This also reverses the direction v0.8.9 moved in (164 to 182 MB), and it
+widens the headroom the 2048 MB floor exists to protect.
+
+**Cold Init didn't measurably change.** Medians moved in both directions, and
+every column's range overlaps every other column's at the same tier, with
+samples anywhere from about 310 to 520 ms. The best single median today was
+v0.8.9 at 2048 MB and the patched v0.8.27 at 3008 MB. Three runs per tier can't
+tell any of the three builds apart at boot, the same conclusion the v0.8.7 vs
+v0.8.9 round reached. The binary grew by 3.2 MB (19%) patched and 3.7 MB
+(22%) stock between the versions, which would push Init up if anything.
+
+**Handler time is flat.** Cold and warm durations all sit between 1.6 and
+2.2 ms, a spread inside run-to-run noise.
+
+v0.8.9 measured 178 MB today against 182 MB in September, so that number is
+stable within a few megabytes across two months. Cold Init for v0.8.9 did not hold
+as well: today's medians were 319 and 426 ms against September's 362 and 346 ms,
+one lower and one higher, which is another reminder of how much that number
+moves from day to day.
+
 ## What the source research project found
 
 Measured in the private project this repo was extracted from (`us-east-1`,
@@ -172,7 +224,7 @@ guarantee**; your numbers will differ by account, region, and the hardware
 allocation AWS happens to give you). They were measured against that project's
 then-current jolt v0.7.14 pin, before the v0.8.5 heap ceiling existed, so the
 256 and 512 MB tiers shown below are not reproducible against this repo's own
-jolt v0.8.9 default, for the reason the heap-ceiling note above describes:
+jolt v0.8.27 default, for the reason the heap-ceiling note above describes:
 
 | Metric | 256 MB | 512 MB |
 |---|---|---|
@@ -201,7 +253,8 @@ binary rather than taking the number on faith:
 
 ```sh
 JOLT_VERSION=0.7.14 jolt image && jolt deploy && jolt bench   # note the table
-JOLT_VERSION=0.8.9  jolt image && jolt deploy && jolt bench   # compare
+JOLT_VERSION=0.8.27 jolt image && jolt deploy && jolt bench   # compare
+CHEZ_PATCHES=0      jolt image && jolt deploy && jolt bench   # 0.8.27 on stock Chez
 jolt teardown
 ```
 

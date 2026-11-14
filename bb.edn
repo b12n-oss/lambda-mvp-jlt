@@ -87,6 +87,7 @@
   image {:doc "build bootstrap + lambda.zip in an amazonlinux:2023 container (LAMBDA_ARCH, default arm64)"
          :task (let [jolt-version (System/getenv "JOLT_VERSION")
                      chez-version (System/getenv "CHEZ_VERSION")
+                     chez-patches (System/getenv "CHEZ_PATCHES")
                      base (System/getenv "BASE_IMAGE")
                      ;; Lambda spells it x86_64, Docker amd64 -- accept both.
                      arch (or (System/getenv "LAMBDA_ARCH") "arm64")
@@ -98,6 +99,7 @@
                  (p/shell (str "docker build --target export --output dist --platform " platform " "
                                (if jolt-version (str "--build-arg JOLT_VERSION=" jolt-version " ") "")
                                (if chez-version (str "--build-arg CHEZ_VERSION=" chez-version " ") "")
+                               (if chez-patches (str "--build-arg CHEZ_PATCHES=" chez-patches " ") "")
                                (if base (str "--build-arg BASE_IMAGE=" base " ") "")
                                ".")))}
 
