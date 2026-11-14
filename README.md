@@ -3,25 +3,24 @@
 Run [Jolt](https://github.com/jolt-lang/jolt) (native Clojure on Chez Scheme,
 no JVM) on AWS Lambda as a **custom runtime**, the same `provided.al2023`
 contract that [awslabs/aws-lambda-cpp](https://github.com/awslabs/aws-lambda-cpp)
-implements for C++, here implemented in ~60 lines of Clojure over Jolt's
-built-in HTTP client. `joltc build` compiles the handler *and* the runtime
-loop into one self-contained native executable named `bootstrap`; the zip is
-that binary plus a `lib/` of non-glibc shared objects.
+implements for C++, in ~60 lines of Clojure over Jolt's built-in HTTP
+client. `joltc build` compiles the handler and the runtime loop into one
+self-contained native executable named `bootstrap`. The zip is that binary
+plus a `lib/` of non-glibc shared objects.
 
-This is a deliberately small extraction: a demo handler (greet + echo +
-warm-invocation counter) and a `jolt bench` tool for comparing cold vs. warm
-boot time across memory tiers, reproducible against **your own AWS
-account**. No function URL, no bearer auth, no public HTTP endpoint:
-everything here is `aws lambda invoke`.
+This is a small extraction: a demo handler (greet + echo + warm-invocation
+counter) and a `jolt bench` tool for comparing cold vs. warm boot time across
+memory tiers, reproducible against **your own AWS account**. There is no
+function URL, no bearer auth and no public HTTP endpoint: everything here is
+`aws lambda invoke`.
 
 ## Status
 
-This is an early release. Jolt itself, and the ecosystem around it
+This is an early release. Jolt and the ecosystem around it
 (`jolt-lang/http-client`, the AL2023 build recipe, the custom-runtime pattern
-this repo demonstrates), are all still evolving. Task names, defaults, and
-even the shape of `jolt bench`'s output may change without a deprecation
-period. Pin a commit or tag if you depend on the current behavior staying
-exactly as it is.
+this repo demonstrates) are still evolving. Task names, defaults, and even the
+shape of `jolt bench`'s output may change without a deprecation period. Pin a
+commit or tag if you depend on the current behavior.
 
 ## How it works
 
@@ -62,7 +61,7 @@ See `docs/guide/runtime-api-loop.md` for the loop's design notes and
 ## Requirements
 
 - [jolt](https://github.com/jolt-lang/jolt) on PATH (`brew install jolt-lang/jolt/jolt`). Every command below is `jolt <task>`: jolt's task runner reads this project's `bb.edn` directly.
-- [babashka](https://babashka.org) too. Several tasks (`test`, `deploy`, `invoke`, `teardown`, `bench`, the `site:*` tasks) shell out to a real `bb` binary internally for `clojure.test`/`cheshire`, neither of which jolt bundles, so it's still a real requirement even though you'll mostly type `jolt`.
+- [babashka](https://babashka.org) too. Several tasks (`test`, `deploy`, `invoke`, `teardown`, `bench`, the `site:*` tasks) shell out to a real `bb` binary internally for `clojure.test`/`cheshire`, neither of which jolt bundles, so you need it even though you'll mostly type `jolt`.
 - Docker, AWS CLI v2.
 - An AWS account and credentials the `aws` CLI can already use:
   `AWS_PROFILE`/`AWS_REGION` env vars, or `aws configure`. **Nothing in this
@@ -108,9 +107,9 @@ The switch is one env var: `LAMBDA_ENDPOINT_URL` (set to
 `http://localhost:4566` by the wrapper). Set, it redirects every `aws` call
 this repo's scripts make to that endpoint and skips the real-AWS credential
 preflight; unset, behavior is exactly as before. See
-[docs/guide/localstack.md](docs/guide/localstack.md) for details — including
-why you shouldn't trust LocalStack numbers for the cold/warm boot question
-`jolt bench` exists to answer.
+[docs/guide/localstack.md](docs/guide/localstack.md) for details, including
+why LocalStack numbers can't answer the cold/warm boot question `jolt bench`
+exists for.
 
 ## Cold vs. warm boot time
 
@@ -118,7 +117,7 @@ See [`docs/guide/cold-warm-boot.md`](docs/guide/cold-warm-boot.md) for what
 `jolt bench` measures, how to read the table it prints, and the source
 research project's own measured numbers, reproduced here as **illustrative,
 not a live guarantee**. Your numbers will differ by account, region, and the
-hardware allocation AWS happens to give you. Run `jolt bench` for your own.
+hardware AWS allocates you. Run `jolt bench` for your own.
 
 ## Restricted networks (proxy that 403s container registries / release assets)
 
@@ -150,7 +149,7 @@ env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
 
 ## Extension points
 
-Not built here, but straightforward follow-ups if you need them:
+Not built here, but straightforward follow-ups:
 
 - A function URL + bearer token, for an HTTP-reachable demo instead of
   `aws lambda invoke` only.

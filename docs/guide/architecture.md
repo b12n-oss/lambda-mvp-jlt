@@ -1,6 +1,6 @@
 # Architecture
 
-This page is the whole-system view: how the runtime loop, the Docker build, and the two babashka-driven tools (AWS lifecycle, bench) fit together. Each piece has its own deep-dive page linked from here; this page is the map, not the territory.
+This page shows how the runtime loop, the Docker build, and the two babashka-driven tools (AWS lifecycle, bench) fit together. Each piece has its own page, linked below.
 
 ## The whole flow
 
@@ -44,13 +44,13 @@ flowchart TD
 
 `src/net/b12n/lambda_mvp/{runtime,handler,main}.clj` is the whole custom runtime: a poll/execute/respond loop against the Lambda Runtime API, a demo handler, and the `-main` entry point `joltc build` compiles. It's generic: `runtime/run` takes any `(fn [event-json ctx]) -> json-string`, so swapping in your own handler means writing one new namespace and pointing `main.clj` at it.
 
-See [The Runtime API loop](runtime-api-loop.md) for the full contract, the design notes behind `:throw-exceptions false`, and how `tools/mock_runtime_api.py` makes runtime-loop changes a two-second local iteration via `jolt probe`.
+See [The Runtime API loop](runtime-api-loop.md) for the full contract, the design notes behind `:throw-exceptions false`, and how `tools/mock_runtime_api.py` turns a runtime-loop change into a two-second local iteration via `jolt probe`.
 
 ## The build
 
 `jolt image` runs a multi-stage Docker build that compiles Chez Scheme and jolt from source on Amazon Linux 2023, the same OS Lambda's `provided.al2023` execution environment runs, because AL2023's glibc (2.34) is older than what jolt's prebuilt Linux binary needs (2.35 or newer). The output is a self-contained `bootstrap` executable plus a `lib/` directory of every non-glibc shared library it links or dlopens.
 
-See [Building on Amazon Linux 2023](al2023-build.md) for the glibc constraint in full, the recipe's five steps, and the packaging gotchas (`which`, `xxd`) that cost a build round each in the original research project.
+See [Building on Amazon Linux 2023](al2023-build.md) for the glibc constraint in full, the recipe's five steps, and the packaging gotchas (`which`, `xxd`) that each cost a build round in the original research project.
 
 ## The AWS lifecycle tool
 
@@ -58,11 +58,11 @@ See [Building on Amazon Linux 2023](al2023-build.md) for the glibc constraint in
 
 `deploy!` never reads `LAMBDA_ARCH` itself. It reads the architecture out of the ELF header of the `dist/bootstrap` `jolt image` last built and passes `--architectures` on both create and update, so a deploy always matches the binary on disk and can flip an existing function's architecture on a later run.
 
-Every mutating AWS call checks its own exit code and fails loudly with the AWS CLI's own error text rather than reporting success on a call that actually failed. That discipline came from live testing during this project's own development: an early version silently reported a successful teardown even when a delete call had failed.
+Every mutating AWS call checks its own exit code and fails with the AWS CLI's own error text instead of reporting success on a failed call. That came from live testing during this project's own development: an early version reported a successful teardown even when a delete call had failed.
 
 ## `jolt demo`: the same flow, one command
 
-`jolt demo` (`script/demo.clj`) runs `image`, `deploy` and `invoke` in order, after checking tools on PATH, AWS credentials and region, Docker daemon access, and that Docker can actually run containers for the target `LAMBDA_ARCH`. It's the same pieces described above, just sequenced with every failure mode checked up front instead of surfacing mid-build.
+`jolt demo` (`script/demo.clj`) runs `image`, `deploy` and `invoke` in order, after checking tools on PATH, AWS credentials and region, Docker daemon access, and that Docker can actually run containers for the target `LAMBDA_ARCH`. It sequences the same pieces, with every failure mode checked up front instead of surfacing mid-build.
 
 ## The bench tool
 
@@ -74,7 +74,7 @@ See [Cold vs. warm boot](cold-warm-boot.md) for what the resulting table means, 
 
 ## Why `load-file`, not `:require`, between the two bench files
 
-`script/bench_run.clj` loads `script/bench.clj` via `(load-file "script/bench.clj")` rather than a normal `:require`. This isn't a style choice: a `script/`-relative namespace doesn't resolve reliably across every way this project's babashka tasks invoke a script (a `bb.edn` task's own classpath, and a direct `bb script/foo.clj` run), so `load-file` as its own top-level form, followed by fully-qualified calls, is the pattern verified to work in both. The same constraint is why `script/aws_lifecycle.clj` and `script/bench_run.clj` each carry their own small `sh`/`die!` helper rather than sharing one: a third shared-helper file would need the same `load-file` chain to reach either of them.
+`script/bench_run.clj` loads `script/bench.clj` via `(load-file "script/bench.clj")` rather than a normal `:require`. A `script/`-relative namespace doesn't resolve reliably across every way this project's babashka tasks invoke a script (a `bb.edn` task's own classpath, and a direct `bb script/foo.clj` run), so `load-file` as its own top-level form, followed by fully-qualified calls, is the pattern verified to work in both. The same constraint is why `script/aws_lifecycle.clj` and `script/bench_run.clj` each carry their own small `sh`/`die!` helper rather than sharing one: a third shared-helper file would need the same `load-file` chain to reach either of them.
 
 ## See also
 

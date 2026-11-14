@@ -1,16 +1,15 @@
 # Contributing to lambda-mvp-jlt
 
 Issues and pull requests are welcome. This is the short version of what a
-change needs to pass. The longer, narrative version lives at
+change needs to pass. The longer version lives at
 [`docs/guide/contributing.md`](docs/guide/contributing.md) and renders
 through [docs-engine](https://github.com/jlt-commons/docs-engine).
 
 ## Status
 
-This is an early release. Jolt itself, and the ecosystem around it, are
-still evolving. Task names and defaults may change without a deprecation
-period. Say so in your PR if a change depends on current behavior staying
-exactly as it is.
+This is an early release. Jolt and its ecosystem are still evolving, so task
+names and defaults may change without a deprecation period. Say so in your PR
+if a change depends on current behavior staying exactly as it is.
 
 ## The gate
 
@@ -26,13 +25,12 @@ change to `src/`, `script/bench.clj`, or `tools/mock_runtime_api.py`.
 and check the `ldd` audit in the build log for `not found` lines.
 
 Live-testing against a real AWS account (`jolt deploy`/`jolt invoke`/
-`jolt bench`/`jolt teardown`) is the check that actually matters for
-anything touching `script/aws_lifecycle.clj` or `script/bench_run.clj`.
-This project's own development found three real bugs this way that no
-offline test could have: see
-[Cold vs. warm boot](docs/guide/cold-warm-boot.md) for the detail. If
-you're changing either file, deploy to a throwaway function in your own
-account, exercise the change for real, and tear it down again before
+`jolt bench`/`jolt teardown`) is the check that matters for anything
+touching `script/aws_lifecycle.clj` or `script/bench_run.clj`. This
+project's own development found three bugs this way that no offline test
+could have: see [Cold vs. warm boot](docs/guide/cold-warm-boot.md) for the
+detail. If you're changing either file, deploy to a throwaway function in
+your own account, exercise the change, and tear it down again before
 opening a PR.
 
 ## Traps
@@ -56,9 +54,9 @@ in `script/*.clj`, invoked as a subprocess from a thin `bb.edn` wrapper.
 
 **Every AWS-mutating call checks its own exit code.** A `sh` call that can
 fail (`create-function`, `delete-role`, `wait function-updated`) dies with
-the AWS CLI's own error text rather than silently continuing past a
-failure. An early version of this project's `teardown!` didn't, and
-silently reported success on a failed delete.
+the AWS CLI's own error text instead of continuing past the failure. An
+early version of `teardown!` didn't, and reported success on a failed
+delete.
 
 ## Docs
 
@@ -68,8 +66,8 @@ jolt site:serve   # build and serve locally
 ```
 
 **Prose style: no em-dashes anywhere**, headings and table cells included.
-Simple connectives, varied sentence length. This applies to documentation,
-commit messages, and code comments alike.
+Use simple connectives and vary sentence length. This applies to
+documentation, commit messages, and code comments alike.
 
 ## Pull requests
 
@@ -85,12 +83,11 @@ commit messages, and code comments alike.
 
 ## AI-assisted contributions
 
-Use whatever helps. What matters is that you have read what you are
-submitting, that you can explain why each part is there, and that any test
-you add is a real test rather than an assertion shaped to pass. Do not
-paste generated documentation you have not verified: several claims in
-this repository's own docs were wrong on the first pass and were caught
-only by running the command rather than by reading it back.
+Use whatever helps, as long as you have read what you submit, can explain
+why each part is there, and any test you add checks something real instead
+of an assertion shaped to pass. Do not paste generated documentation you
+have not verified: several claims in this repository's own docs were wrong
+on the first pass and were caught only by running the command.
 
 ## Security
 

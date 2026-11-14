@@ -51,9 +51,9 @@ short.
 ## `JOLT_VERSION`/`CHEZ_VERSION` are build args, not constants
 
 Both are overridable: `JOLT_VERSION=0.7.14 jolt image` rebuilds against an
-older jolt release without editing the Dockerfile. This is what makes
-`docs/guide/cold-warm-boot.md`'s jolt-version comparison reproducible rather
-than a one-time historical claim.
+older jolt release without editing the Dockerfile. That makes
+`docs/guide/cold-warm-boot.md`'s jolt-version comparison reproducible instead
+of a one-time historical claim.
 
 ## AL2023 packaging gotchas (each cost one build round in the source project)
 

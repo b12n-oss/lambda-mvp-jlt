@@ -14,8 +14,8 @@ speaks the Runtime API, plain HTTP on a loopback address, no TLS:
 | Handler error | `POST /2018-06-01/runtime/invocation/{request-id}/error` |
 | Startup error | `POST /2018-06-01/runtime/init/error` |
 
-The load-bearing subtlety: **the request id arrives as a response header on
-`/next`**, so the HTTP client must expose headers. Jolt's
+The request id arrives as a response header on `/next`, so the HTTP client
+must expose headers. Jolt's
 `jolt-lang/http-client` (clj-http-lite on jolt host shims) returns
 `{:status :headers :body}` with lowercase string header keys, exactly enough.
 
@@ -66,8 +66,8 @@ mock-runtime-api: PASS
 runtime: /invocation/next returned 410 -- exiting
 ```
 
-This makes runtime-loop changes a ~2-second local iteration, with the identical
-code path that runs on Lambda (only `AWS_LAMBDA_RUNTIME_API` differs).
+So a runtime-loop change is a ~2-second local iteration through the same code
+path that runs on Lambda (only `AWS_LAMBDA_RUNTIME_API` differs).
 
 ## What the loop deliberately skips
 

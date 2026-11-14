@@ -8,9 +8,9 @@ jolt test         # unit tests for script/bench.clj's pure functions (no AWS, no
 jolt image        # AL2023 Docker build -> dist/bootstrap + dist/lambda.zip (several minutes)
 ```
 
-`jolt probe` and `jolt test` are the fast, offline loop: run them after every change to `src/`, `script/bench.clj`, or `tools/mock_runtime_api.py`. `jolt image` is the slow, real one: run it after any `Dockerfile` change, and check the `ldd` audit in the build log for `not found` lines.
+`jolt probe` and `jolt test` are the fast, offline loop: run them after every change to `src/`, `script/bench.clj`, or `tools/mock_runtime_api.py`. `jolt image` is the slow one: run it after any `Dockerfile` change, and check the `ldd` audit in the build log for `not found` lines.
 
-Live-testing against a real AWS account (`jolt deploy`/`jolt invoke`/`jolt bench`/`jolt teardown`) isn't part of the fast loop, but it's the check that actually matters for anything touching `script/aws_lifecycle.clj` or `script/bench_run.clj`. This project's own development found three real bugs this way that no offline test could have (a memory default too low for jolt's own heap ceiling, and a silent-failure gap in how `jolt bench` reported a crashing function): see [Cold vs. warm boot](cold-warm-boot.md) for the detail. If you're changing either of those files, deploy to a throwaway function in your own account, exercise the change for real, and tear it down again before opening a PR.
+Live-testing against a real AWS account (`jolt deploy`/`jolt invoke`/`jolt bench`/`jolt teardown`) isn't part of the fast loop, but it's the check that matters for anything touching `script/aws_lifecycle.clj` or `script/bench_run.clj`. This project's own development found three bugs this way that no offline test could have (a memory default too low for jolt's own heap ceiling, and a silent-failure gap in how `jolt bench` reported a crashing function): see [Cold vs. warm boot](cold-warm-boot.md) for the detail. If you're changing either of those files, deploy to a throwaway function in your own account, exercise the change, and tear it down again before opening a PR.
 
 ## Conventions
 

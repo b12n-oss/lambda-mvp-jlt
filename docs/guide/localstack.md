@@ -2,10 +2,10 @@
 
 Everything in this repo that touches AWS (`jolt deploy`, `jolt invoke`,
 `jolt teardown`, `jolt bench`, `jolt demo`) can run against
-[LocalStack](https://localstack.cloud) instead of a real account — useful for
-trying the full deploy/invoke lifecycle with zero AWS credentials, zero cost,
-and zero risk to a real account. The Runtime API loop, the handler, and the
-zip are exactly the same artifacts real AWS gets; only the control plane
+[LocalStack](https://localstack.cloud) instead of a real account. That lets you
+try the full deploy/invoke lifecycle with no AWS credentials, no cost, and no
+risk to a real account. The Runtime API loop, the handler, and the zip are
+the same artifacts real AWS gets; only the control plane
 (`lambda create-function`, `invoke`, IAM) is emulated.
 
 ## Quickstart
@@ -34,12 +34,12 @@ Set, it does two things to every `aws` CLI call the scripts make:
 
 - `--endpoint-url <value>` is injected as a global option, and
 - LocalStack's documented dummy credentials (`test`/`test`, region
-  `us-east-1`) are exported — unless you've set `AWS_ACCESS_KEY_ID` /
+  `us-east-1`) are exported, unless you've set `AWS_ACCESS_KEY_ID` /
   `AWS_SECRET_ACCESS_KEY` / `AWS_DEFAULT_REGION` yourself, which then win.
 
 The real-AWS credential/region preflight in `demo`/`deploy`/`invoke`/`bench`
-is skipped when the endpoint is set, so no aws CLI configuration is needed at
-all for the LocalStack path.
+is skipped when the endpoint is set, so the LocalStack path needs no aws CLI
+configuration.
 
 You can drive it by hand, without the wrapper tasks:
 
@@ -78,9 +78,9 @@ Not good:
 
 - **Cold/warm boot numbers.** `jolt bench` runs against LocalStack if the
   endpoint is set, but LocalStack executes your function in a plain docker
-  container on your machine — no Firecracker microVM, no Lambda memory-tier
+  container on your machine, with no Firecracker microVM, no Lambda memory-tier
   CPU credits, and on Apple Silicon possibly under emulation. The numbers are
-  meaningless for the cold-vs-warm question; use a real account for that
+  meaningless for the cold-vs-warm question, so use a real account for that
   (that's what `jolt bench` exists for).
 - IAM fidelity. LocalStack's IAM is permissive; a trust policy that works
   here may still be rejected by real AWS.

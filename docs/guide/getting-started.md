@@ -10,8 +10,8 @@
 
 | Tool | Why | Install |
 |---|---|---|
-| **[jolt](https://github.com/jolt-lang/jolt)** | `jolt probe` runs the interpreted runtime loop locally, and `jolt <task>` reads this project's `bb.edn` directly, so it's the command every example on this page uses | `brew install jolt-lang/jolt/jolt` |
-| **[babashka](https://babashka.org)** | jolt's task runner reads `bb.edn`, but several tasks (`test`, `deploy`, `invoke`, `teardown`, `bench`, the `site:*` tasks) shell out to a real `bb` binary internally, since they need `clojure.test` or `cheshire`, neither of which jolt bundles. You still need it installed even though you'll mostly type `jolt`, not `bb` | `brew install borkdude/brew/babashka` |
+| **[jolt](https://github.com/jolt-lang/jolt)** | `jolt probe` runs the interpreted runtime loop locally, and `jolt <task>` reads this project's `bb.edn` directly, so every example on this page uses it | `brew install jolt-lang/jolt/jolt` |
+| **[babashka](https://babashka.org)** | jolt's task runner reads `bb.edn`, but several tasks (`test`, `deploy`, `invoke`, `teardown`, `bench`, the `site:*` tasks) shell out to a real `bb` binary internally, since they need `clojure.test` or `cheshire`, neither of which jolt bundles. You need it installed even though you'll mostly type `jolt`, not `bb` | `brew install borkdude/brew/babashka` |
 | **Docker** | Builds the deployable `bootstrap` binary on Amazon Linux 2023 (the glibc version has to match the real Lambda environment, see [Building on Amazon Linux 2023](al2023-build.md)) | [docker.com](https://www.docker.com) |
 | **AWS CLI v2** | Every AWS-touching task shells out to it | `brew install awscli` |
 | **An AWS account** | To deploy, invoke, and benchmark against | Credentials set up via `AWS_PROFILE`/`AWS_REGION` env vars or `aws configure`. Nothing in this repo hardcodes a profile, account, or region. |
@@ -24,7 +24,7 @@ cd lambda-mvp-jlt
 jolt probe
 ```
 
-`jolt probe` runs the actual runtime loop (`joltc run`, interpreted, not the compiled `bootstrap`) against an offline mock of the Lambda Runtime API on an OS-assigned local port. No AWS account, no Docker, and it finishes in about two seconds. If this doesn't pass, nothing later in this page will either: it's the fastest signal that something about your `joltc` install or the runtime loop itself is wrong before you spend five minutes on a Docker build.
+`jolt probe` runs the actual runtime loop (`joltc run`, interpreted, not the compiled `bootstrap`) against an offline mock of the Lambda Runtime API on an OS-assigned local port. No AWS account, no Docker, and it finishes in about two seconds. If this doesn't pass, nothing later on this page will either, and it fails fast: you learn your `joltc` install or the runtime loop is broken before you spend five minutes on a Docker build.
 
 Run the unit suite the same way:
 
@@ -38,7 +38,7 @@ jolt test
 jolt image
 ```
 
-This builds Chez Scheme and jolt from source inside an Amazon Linux 2023 container (the same OS Lambda's `provided.al2023` execution environment runs), compiles the handler and runtime loop into one self-contained executable, and audits every non-glibc shared library it links. It takes several minutes the first time; Docker's own layer cache makes later builds faster. When it finishes, `dist/bootstrap` and `dist/lambda.zip` exist.
+This builds Chez Scheme and jolt from source inside an Amazon Linux 2023 container (the same OS Lambda's `provided.al2023` execution environment runs), compiles the handler and runtime loop into one self-contained executable, and audits every non-glibc shared library it links. It takes several minutes the first time, and Docker's layer cache speeds up later builds. When it finishes, `dist/bootstrap` and `dist/lambda.zip` exist.
 
 ## Deploy, invoke, tear down
 
@@ -56,7 +56,7 @@ jolt teardown
 jolt demo
 ```
 
-`jolt demo` runs `image`, `deploy` and `invoke` in order. Before any of them it checks that `docker` and `aws` are on PATH, that the AWS CLI has credentials and a region (and prints the account it will deploy to), that your user can reach the Docker daemon, and that Docker can run containers for `LAMBDA_ARCH`. A missing piece stops it with the fix, before the build starts or anything changes in your account. Docker's layer cache makes repeat runs fast, so it's also the edit-and-redeploy loop for `handler.clj`.
+`jolt demo` runs `image`, `deploy` and `invoke` in order. Before any of them it checks that `docker` and `aws` are on PATH, that the AWS CLI has credentials and a region (and prints the account it will deploy to), that your user can reach the Docker daemon, and that Docker can run containers for `LAMBDA_ARCH`. A missing piece stops it with the fix, before the build starts or anything changes in your account. Docker's layer cache makes repeat runs fast, so it doubles as the edit-and-redeploy loop for `handler.clj`.
 
 ## Measure cold vs. warm boot time
 
@@ -66,7 +66,7 @@ jolt bench
 jolt teardown
 ```
 
-`jolt bench` is the reason this project exists: it deploys at a few different memory tiers, measures one cold invocation and several warm ones at each, and prints a comparison table. See [Cold vs. warm boot](cold-warm-boot.md) for what the numbers mean and how to reproduce a jolt-version comparison.
+`jolt bench` is why this project exists: it deploys at a few different memory tiers, measures one cold invocation and several warm ones at each, and prints a comparison table. See [Cold vs. warm boot](cold-warm-boot.md) for what the numbers mean and how to reproduce a jolt-version comparison.
 
 ## Next steps
 
