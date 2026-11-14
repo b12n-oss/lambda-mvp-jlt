@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- Default jolt is v0.8.27 (was v0.8.9). The Dockerfile now clones jolt before Chez and applies jolt's own Chez kernel patches (`CHEZ_PATCHES=1`, the default; `0` builds stock Chez), installing `patch` and `diffutils` for its patch script. Measured on 2026-11-14: Max Memory Used 178 MB -> 128 MB, Cold Init unchanged within noise. See `docs/guide/cold-warm-boot.md`.
+
 ### Added
 
 - Initial public release preparation.

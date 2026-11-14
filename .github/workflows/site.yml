@@ -35,7 +35,7 @@ concurrency:
 env:
   # v0.3.2 fixes `jolt run build`/`clean` (docs-engine#3), which is what
   # lets this workflow use jolt instead of babashka below.
-  DOCS_ENGINE_REF: v0.3.2
+  DOCS_ENGINE_REF: v0.4.6
   BASE_PATH: /lambda-mvp-jlt
 
 jobs:

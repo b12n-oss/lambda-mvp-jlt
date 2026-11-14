@@ -10,24 +10,41 @@
 
 # Overridable for restricted networks: pre-load an image (e.g. via `crane pull`
 # + `docker load` + `docker tag ... my-local/amazonlinux:2023`) and pass
-# --build-arg BASE_IMAGE=my-local/amazonlinux:2023.
+# --build-arg BASE_IMAGE=my-local/amazonlinux:2023. Docker Hub's official
+# `amazonlinux:2023` is the same image and often gets through a proxy that
+# refuses public.ecr.aws: `BASE_IMAGE=amazonlinux:2023 jolt image`.
 ARG BASE_IMAGE=public.ecr.aws/amazonlinux/amazonlinux:2023
 FROM ${BASE_IMAGE} AS build
 
 # Overridable so a collaborator can reproduce a jolt-version cold/warm
 # boot-time comparison -- see docs/guide/cold-warm-boot.md:
-#   JOLT_VERSION=0.7.14 jolt image && jolt deploy && jolt bench
 #   JOLT_VERSION=0.8.9  jolt image && jolt deploy && jolt bench
-ARG JOLT_VERSION=0.8.9
+#   JOLT_VERSION=0.8.27 jolt image && jolt deploy && jolt bench
+ARG JOLT_VERSION=0.8.27
 ARG CHEZ_VERSION=10.4.1
+# 1 applies jolt's own Chez kernel patches (jolt's ci/apply-chez-patches.sh,
+# present from v0.8.10 on), the Chez its CI and release binaries are built
+# with. 0 builds stock Chez, which jolt still supports at the stock cost.
+ARG CHEZ_PATCHES=1
 
-RUN dnf install -y gcc gcc-c++ make git zip tar gzip findutils \
+# patch and diffutils (cmp): jolt's ci/apply-chez-patches.sh needs both.
+RUN dnf install -y gcc gcc-c++ make git zip tar gzip findutils patch diffutils \
       ncurses-devel libuuid-devel zlib-devel lz4-devel openssl-libs \
     && dnf clean all
+
+# Jolt from source (bootstrap seed is checked in -- no build step, clone and
+# run). PINNED to a tag, not a floating clone of main, so `bb image` is
+# reproducible. Cloned before Chez, because the Chez build below applies the
+# kernel patches this checkout carries.
+RUN git clone --recurse-submodules --depth 1 --branch v${JOLT_VERSION} https://github.com/jolt-lang/jolt.git /opt/jolt
+ENV PATH=/opt/jolt/bin:$PATH
 
 # Chez Scheme from source: the distro-package route ships no kernel dev files
 # (libkernel.a, scheme.h), which `joltc build` needs to link a binary.
 RUN git clone --depth 1 --branch v${CHEZ_VERSION} https://github.com/cisco/ChezScheme.git /tmp/chez-src \
+    && if [ "${CHEZ_PATCHES}" = "1" ] && [ -f /opt/jolt/ci/apply-chez-patches.sh ]; then \
+         sh /opt/jolt/ci/apply-chez-patches.sh /tmp/chez-src; \
+       else echo "building stock Chez (CHEZ_PATCHES=${CHEZ_PATCHES})"; fi \
     && cd /tmp/chez-src \
     && ./configure --installprefix=/opt/chez --threads --disable-x11 \
     && make -j"$(nproc)" \
@@ -36,12 +53,6 @@ RUN git clone --depth 1 --branch v${CHEZ_VERSION} https://github.com/cisco/ChezS
     && chmod +x /opt/chez/bin/chez \
     && rm -rf /tmp/chez-src
 ENV PATH=/opt/chez/bin:$PATH
-
-# Jolt from source (bootstrap seed is checked in -- no build step, clone and
-# run). PINNED to a tag, not a floating clone of main, so `bb image` is
-# reproducible.
-RUN git clone --recurse-submodules --depth 1 --branch v${JOLT_VERSION} https://github.com/jolt-lang/jolt.git /opt/jolt
-ENV PATH=/opt/jolt/bin:$PATH
 
 # joltc's build tooling shells out to `which` (locate chez) and `xxd` (embed
 # the boot image; ships in vim-common) -- neither is in AL2023 by default.
